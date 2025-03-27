@@ -5,7 +5,7 @@ import random
 from collections import deque, namedtuple
 
 
-Movie = namedtuple('Movie', ['movie_id', 'letterboxd_url'])
+Movie = namedtuple('Movie', ['movie_id', 'letterboxd_path', 'title', 'img_url'])
 
 class LetterboxdScraper:
     def __init__(self, seed: Union[int, None] = None):
@@ -62,5 +62,11 @@ class LetterboxdScraper:
             if poster_div:
                 film_id = poster_div.get("data-film-id")
                 film_url = poster_div.get("data-target-link")
-                movies[film_id] = Movie(film_id, film_url)
+                img = poster_div.find("img")
+                if img:
+                    title = img.get("alt")
+                    film_slug = poster_div.get("data-film-slug")
+                    if film_slug:
+                        img_url = f"https://a.ltrbxd.com/resized/film-poster/{film_id}-{film_slug}-0-125-0-187-crop.jpg"
+                        movies[film_id] = Movie(film_id, film_url, title, img_url)
         return movies
