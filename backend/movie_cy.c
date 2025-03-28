@@ -6,7 +6,7 @@
         "depends": [],
         "name": "movie_cy",
         "sources": [
-            "movie_cy.pyx"
+            "backend/movie_cy.pyx"
         ]
     },
     "module_name": "movie_cy"
@@ -1464,10 +1464,10 @@ static const char *__pyx_filename;
 /* #### Code section: filename_table ### */
 
 static const char *__pyx_f[] = {
-  "movie_cy.pyx",
-  "movie_cy.pxd",
+  "backend/movie_cy.pyx",
+  "backend/movie_cy.pxd",
   "<stringsource>",
-  "type.pxd",
+  ".venv/lib/python3.8/site-packages/Cython/Includes/cpython/type.pxd",
 };
 /* #### Code section: utility_code_proto_before_types ### */
 /* ForceInitThreads.proto */
@@ -2228,6 +2228,7 @@ static const char __pyx_k_name[] = "__name__";
 static const char __pyx_k_self[] = "self";
 static const char __pyx_k_test[] = "__test__";
 static const char __pyx_k_Movie[] = "Movie";
+static const char __pyx_k_slots[] = "__slots__";
 static const char __pyx_k_state[] = "state";
 static const char __pyx_k_title[] = "title";
 static const char __pyx_k_dict_2[] = "_dict";
@@ -2366,6 +2367,7 @@ typedef struct {
   PyObject *__pyx_n_s_self;
   PyObject *__pyx_n_s_setstate;
   PyObject *__pyx_n_s_setstate_cython;
+  PyObject *__pyx_n_s_slots;
   PyObject *__pyx_n_s_state;
   PyObject *__pyx_kp_s_stringsource;
   PyObject *__pyx_n_s_test;
@@ -2468,6 +2470,7 @@ static int __pyx_m_clear(PyObject *m) {
   Py_CLEAR(clear_module_state->__pyx_n_s_self);
   Py_CLEAR(clear_module_state->__pyx_n_s_setstate);
   Py_CLEAR(clear_module_state->__pyx_n_s_setstate_cython);
+  Py_CLEAR(clear_module_state->__pyx_n_s_slots);
   Py_CLEAR(clear_module_state->__pyx_n_s_state);
   Py_CLEAR(clear_module_state->__pyx_kp_s_stringsource);
   Py_CLEAR(clear_module_state->__pyx_n_s_test);
@@ -2548,6 +2551,7 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
   Py_VISIT(traverse_module_state->__pyx_n_s_self);
   Py_VISIT(traverse_module_state->__pyx_n_s_setstate);
   Py_VISIT(traverse_module_state->__pyx_n_s_setstate_cython);
+  Py_VISIT(traverse_module_state->__pyx_n_s_slots);
   Py_VISIT(traverse_module_state->__pyx_n_s_state);
   Py_VISIT(traverse_module_state->__pyx_kp_s_stringsource);
   Py_VISIT(traverse_module_state->__pyx_n_s_test);
@@ -2652,6 +2656,7 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
 #define __pyx_n_s_self __pyx_mstate_global->__pyx_n_s_self
 #define __pyx_n_s_setstate __pyx_mstate_global->__pyx_n_s_setstate
 #define __pyx_n_s_setstate_cython __pyx_mstate_global->__pyx_n_s_setstate_cython
+#define __pyx_n_s_slots __pyx_mstate_global->__pyx_n_s_slots
 #define __pyx_n_s_state __pyx_mstate_global->__pyx_n_s_state
 #define __pyx_kp_s_stringsource __pyx_mstate_global->__pyx_kp_s_stringsource
 #define __pyx_n_s_test __pyx_mstate_global->__pyx_n_s_test
@@ -2671,9 +2676,9 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
 #define __pyx_codeobj__9 __pyx_mstate_global->__pyx_codeobj__9
 /* #### Code section: module_code ### */
 
-/* "movie_cy.pyx":8
+/* "movie_cy.pyx":10
+ *     __slots__ = ['movie_id', 'letterboxd_path', 'title']
  * 
- * cdef class Movie:
  *     def __init__(self, str movie_id, str letterboxd_path, str title):             # <<<<<<<<<<<<<<
  *         self.movie_id = movie_id
  *         self.letterboxd_path = letterboxd_path
@@ -2721,7 +2726,7 @@ static int __pyx_pw_8movie_cy_5Movie_1__init__(PyObject *__pyx_v_self, PyObject 
           (void)__Pyx_Arg_NewRef_VARARGS(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 8, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 10, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
         CYTHON_FALLTHROUGH;
         case  1:
@@ -2729,9 +2734,9 @@ static int __pyx_pw_8movie_cy_5Movie_1__init__(PyObject *__pyx_v_self, PyObject 
           (void)__Pyx_Arg_NewRef_VARARGS(values[1]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 8, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 10, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, 1); __PYX_ERR(0, 8, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, 1); __PYX_ERR(0, 10, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
@@ -2739,14 +2744,14 @@ static int __pyx_pw_8movie_cy_5Movie_1__init__(PyObject *__pyx_v_self, PyObject 
           (void)__Pyx_Arg_NewRef_VARARGS(values[2]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 8, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 10, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, 2); __PYX_ERR(0, 8, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, 2); __PYX_ERR(0, 10, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__init__") < 0)) __PYX_ERR(0, 8, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__init__") < 0)) __PYX_ERR(0, 10, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 3)) {
       goto __pyx_L5_argtuple_error;
@@ -2761,7 +2766,7 @@ static int __pyx_pw_8movie_cy_5Movie_1__init__(PyObject *__pyx_v_self, PyObject 
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, __pyx_nargs); __PYX_ERR(0, 8, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, __pyx_nargs); __PYX_ERR(0, 10, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -2775,9 +2780,9 @@ static int __pyx_pw_8movie_cy_5Movie_1__init__(PyObject *__pyx_v_self, PyObject 
   __Pyx_RefNannyFinishContext();
   return -1;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_movie_id), (&PyString_Type), 1, "movie_id", 1))) __PYX_ERR(0, 8, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_letterboxd_path), (&PyString_Type), 1, "letterboxd_path", 1))) __PYX_ERR(0, 8, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_title), (&PyString_Type), 1, "title", 1))) __PYX_ERR(0, 8, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_movie_id), (&PyString_Type), 1, "movie_id", 1))) __PYX_ERR(0, 10, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_letterboxd_path), (&PyString_Type), 1, "letterboxd_path", 1))) __PYX_ERR(0, 10, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_title), (&PyString_Type), 1, "title", 1))) __PYX_ERR(0, 10, __pyx_L1_error)
   __pyx_r = __pyx_pf_8movie_cy_5Movie___init__(((struct __pyx_obj_8movie_cy_Movie *)__pyx_v_self), __pyx_v_movie_id, __pyx_v_letterboxd_path, __pyx_v_title);
 
   /* function exit code */
@@ -2800,8 +2805,8 @@ static int __pyx_pf_8movie_cy_5Movie___init__(struct __pyx_obj_8movie_cy_Movie *
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__init__", 1);
 
-  /* "movie_cy.pyx":9
- * cdef class Movie:
+  /* "movie_cy.pyx":11
+ * 
  *     def __init__(self, str movie_id, str letterboxd_path, str title):
  *         self.movie_id = movie_id             # <<<<<<<<<<<<<<
  *         self.letterboxd_path = letterboxd_path
@@ -2813,7 +2818,7 @@ static int __pyx_pf_8movie_cy_5Movie___init__(struct __pyx_obj_8movie_cy_Movie *
   __Pyx_DECREF(__pyx_v_self->movie_id);
   __pyx_v_self->movie_id = __pyx_v_movie_id;
 
-  /* "movie_cy.pyx":10
+  /* "movie_cy.pyx":12
  *     def __init__(self, str movie_id, str letterboxd_path, str title):
  *         self.movie_id = movie_id
  *         self.letterboxd_path = letterboxd_path             # <<<<<<<<<<<<<<
@@ -2826,7 +2831,7 @@ static int __pyx_pf_8movie_cy_5Movie___init__(struct __pyx_obj_8movie_cy_Movie *
   __Pyx_DECREF(__pyx_v_self->letterboxd_path);
   __pyx_v_self->letterboxd_path = __pyx_v_letterboxd_path;
 
-  /* "movie_cy.pyx":11
+  /* "movie_cy.pyx":13
  *         self.movie_id = movie_id
  *         self.letterboxd_path = letterboxd_path
  *         self.title = title             # <<<<<<<<<<<<<<
@@ -2839,9 +2844,9 @@ static int __pyx_pf_8movie_cy_5Movie___init__(struct __pyx_obj_8movie_cy_Movie *
   __Pyx_DECREF(__pyx_v_self->title);
   __pyx_v_self->title = __pyx_v_title;
 
-  /* "movie_cy.pyx":8
+  /* "movie_cy.pyx":10
+ *     __slots__ = ['movie_id', 'letterboxd_path', 'title']
  * 
- * cdef class Movie:
  *     def __init__(self, str movie_id, str letterboxd_path, str title):             # <<<<<<<<<<<<<<
  *         self.movie_id = movie_id
  *         self.letterboxd_path = letterboxd_path
@@ -2853,7 +2858,7 @@ static int __pyx_pf_8movie_cy_5Movie___init__(struct __pyx_obj_8movie_cy_Movie *
   return __pyx_r;
 }
 
-/* "movie_cy.pyx":13
+/* "movie_cy.pyx":15
  *         self.title = title
  * 
  *     def __str__(self):             # <<<<<<<<<<<<<<
@@ -2887,13 +2892,13 @@ static PyObject *__pyx_pf_8movie_cy_5Movie_2__str__(struct __pyx_obj_8movie_cy_M
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__str__", 1);
 
-  /* "movie_cy.pyx":14
+  /* "movie_cy.pyx":16
  * 
  *     def __str__(self):
  *         return f"Movie(movie_id='{self.movie_id}', letterboxd_path='{self.letterboxd_path}', title='{self.title}')"             # <<<<<<<<<<<<<<
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyTuple_New(7); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __pyx_t_1 = PyTuple_New(7); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 16, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_2 = 0;
   __pyx_t_3 = 127;
@@ -2901,7 +2906,7 @@ static PyObject *__pyx_pf_8movie_cy_5Movie_2__str__(struct __pyx_obj_8movie_cy_M
   __pyx_t_2 += 16;
   __Pyx_GIVEREF(__pyx_kp_u_Movie_movie_id);
   PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_kp_u_Movie_movie_id);
-  __pyx_t_4 = __Pyx_PyObject_FormatSimple(__pyx_v_self->movie_id, __pyx_empty_unicode); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_FormatSimple(__pyx_v_self->movie_id, __pyx_empty_unicode); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 16, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_3 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) > __pyx_t_3) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) : __pyx_t_3;
   __pyx_t_2 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_4);
@@ -2912,7 +2917,7 @@ static PyObject *__pyx_pf_8movie_cy_5Movie_2__str__(struct __pyx_obj_8movie_cy_M
   __pyx_t_2 += 20;
   __Pyx_GIVEREF(__pyx_kp_u_letterboxd_path_2);
   PyTuple_SET_ITEM(__pyx_t_1, 2, __pyx_kp_u_letterboxd_path_2);
-  __pyx_t_4 = __Pyx_PyObject_FormatSimple(__pyx_v_self->letterboxd_path, __pyx_empty_unicode); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_FormatSimple(__pyx_v_self->letterboxd_path, __pyx_empty_unicode); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 16, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_3 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) > __pyx_t_3) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) : __pyx_t_3;
   __pyx_t_2 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_4);
@@ -2923,7 +2928,7 @@ static PyObject *__pyx_pf_8movie_cy_5Movie_2__str__(struct __pyx_obj_8movie_cy_M
   __pyx_t_2 += 10;
   __Pyx_GIVEREF(__pyx_kp_u_title_2);
   PyTuple_SET_ITEM(__pyx_t_1, 4, __pyx_kp_u_title_2);
-  __pyx_t_4 = __Pyx_PyObject_FormatSimple(__pyx_v_self->title, __pyx_empty_unicode); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_FormatSimple(__pyx_v_self->title, __pyx_empty_unicode); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 16, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_3 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) > __pyx_t_3) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) : __pyx_t_3;
   __pyx_t_2 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_4);
@@ -2934,14 +2939,14 @@ static PyObject *__pyx_pf_8movie_cy_5Movie_2__str__(struct __pyx_obj_8movie_cy_M
   __pyx_t_2 += 2;
   __Pyx_GIVEREF(__pyx_kp_u_);
   PyTuple_SET_ITEM(__pyx_t_1, 6, __pyx_kp_u_);
-  __pyx_t_4 = __Pyx_PyUnicode_Join(__pyx_t_1, 7, __pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyUnicode_Join(__pyx_t_1, 7, __pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 16, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_r = __pyx_t_4;
   __pyx_t_4 = 0;
   goto __pyx_L0;
 
-  /* "movie_cy.pyx":13
+  /* "movie_cy.pyx":15
  *         self.title = title
  * 
  *     def __str__(self):             # <<<<<<<<<<<<<<
@@ -4440,6 +4445,7 @@ static int __Pyx_CreateStringTabAndInitStrings(void) {
     {&__pyx_n_s_self, __pyx_k_self, sizeof(__pyx_k_self), 0, 0, 1, 1},
     {&__pyx_n_s_setstate, __pyx_k_setstate, sizeof(__pyx_k_setstate), 0, 0, 1, 1},
     {&__pyx_n_s_setstate_cython, __pyx_k_setstate_cython, sizeof(__pyx_k_setstate_cython), 0, 0, 1, 1},
+    {&__pyx_n_s_slots, __pyx_k_slots, sizeof(__pyx_k_slots), 0, 0, 1, 1},
     {&__pyx_n_s_state, __pyx_k_state, sizeof(__pyx_k_state), 0, 0, 1, 1},
     {&__pyx_kp_s_stringsource, __pyx_k_stringsource, sizeof(__pyx_k_stringsource), 0, 0, 1, 0},
     {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
@@ -4916,6 +4922,28 @@ if (!__Pyx_RefNanny) {
   #if defined(__Pyx_Generator_USED) || defined(__Pyx_Coroutine_USED)
   if (__Pyx_patch_abc() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   #endif
+
+  /* "movie_cy.pyx":8
+ * 
+ * cdef class Movie:
+ *     __slots__ = ['movie_id', 'letterboxd_path', 'title']             # <<<<<<<<<<<<<<
+ * 
+ *     def __init__(self, str movie_id, str letterboxd_path, str title):
+ */
+  __pyx_t_2 = PyList_New(3); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 8, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_INCREF(__pyx_n_s_movie_id);
+  __Pyx_GIVEREF(__pyx_n_s_movie_id);
+  if (__Pyx_PyList_SET_ITEM(__pyx_t_2, 0, __pyx_n_s_movie_id)) __PYX_ERR(0, 8, __pyx_L1_error);
+  __Pyx_INCREF(__pyx_n_s_letterboxd_path);
+  __Pyx_GIVEREF(__pyx_n_s_letterboxd_path);
+  if (__Pyx_PyList_SET_ITEM(__pyx_t_2, 1, __pyx_n_s_letterboxd_path)) __PYX_ERR(0, 8, __pyx_L1_error);
+  __Pyx_INCREF(__pyx_n_s_title);
+  __Pyx_GIVEREF(__pyx_n_s_title);
+  if (__Pyx_PyList_SET_ITEM(__pyx_t_2, 2, __pyx_n_s_title)) __PYX_ERR(0, 8, __pyx_L1_error);
+  if (__Pyx_SetItemOnTypeDict((PyObject *)__pyx_ptype_8movie_cy_Movie, __pyx_n_s_slots, __pyx_t_2) < 0) __PYX_ERR(0, 8, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  PyType_Modified(__pyx_ptype_8movie_cy_Movie);
 
   /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<

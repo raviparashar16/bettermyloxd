@@ -5,6 +5,8 @@ cdef extern from "Python.h":
     PyObject* PyUnicode_FromString(const char* u) nogil
 
 cdef class Movie:
+    __slots__ = ['movie_id', 'letterboxd_path', 'title']
+
     def __init__(self, str movie_id, str letterboxd_path, str title):
         self.movie_id = movie_id
         self.letterboxd_path = letterboxd_path

@@ -1,21 +1,25 @@
 from bs4 import BeautifulSoup
-import requests
-from typing import List, Dict, Deque, Union
+from typing import List, Dict, Union
 import random
-from collections import deque
+import asyncio
+import aiohttp
 from cython_utils import combine_dictionaries
 from movie_cy import Movie
+from concurrent.futures import ProcessPoolExecutor
 
 
 class LetterboxdScraper:
-    def __init__(self, seed: Union[int, None] = None):
+    site_url = "https://letterboxd.com"
+    film_url_start = f"{site_url}/ajax/poster"
+    film_url_end = "std/125x187/"
+    
+    def __init__(self, seed: Union[int, None] = None, max_workers: Union[int, None] = None):
         self.seed = random.seed(seed) if seed is not None else None
-        self.site_url = "https://letterboxd.com"
-        self.film_url_start = f"{self.site_url}/ajax/poster"
-        self.film_url_end = "std/125x187/"
+        self.max_workers = max_workers
     
     def _combine_dictionaries(self, all_movie_lists: List[Dict[str, Movie]]) -> Dict[str, Movie]:
-        return combine_dictionaries(all_movie_lists)
+        combined_movies = combine_dictionaries(all_movie_lists)
+        return combined_movies
     
     def _remove_used_movies(self, movies: Dict[str, Movie], exclude_ids: List[str]) -> Dict[str, Movie]:
         return {key: val for key, val in movies.items() if key not in exclude_ids}
@@ -40,23 +44,50 @@ class LetterboxdScraper:
     def _random_pick(self, movie_keys: List[str], num_movies: int) -> List[str]:
         return [random.choice(movie_keys)] if num_movies == 1 else random.choices(movie_keys, k=num_movies)
     
-    def _get_url_from_usernames(self, usernames: List[str]) -> List[str]:
-        return [f"{self.site_url}/{username}/watchlist/" for username in usernames]
+    @staticmethod
+    def _get_url_from_usernames(usernames: List[str]) -> List[str]:
+        return [f"{LetterboxdScraper.site_url}/{username}/watchlist/" for username in usernames]
+    
+    async def _fetch_page(self, session: aiohttp.ClientSession, url: str, executor: ProcessPoolExecutor, url_queue: asyncio.Queue) -> Dict[str, Movie]:
+        async with session.get(url) as response:
+            content = await response.read()
+            soup = BeautifulSoup(content, "lxml")
+            next_button = soup.find("a", class_="next")
+            if next_button:
+                next_url = f"{LetterboxdScraper.site_url}{next_button['href']}"
+                await url_queue.put(next_url)
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(executor, self._parse, content)
+            return result
+
+    async def _scrape_async(self, usernames: List[str]) -> List[Dict[str, Movie]]:
+        url_queue = asyncio.Queue()
+        for url in self._get_url_from_usernames(usernames):
+            await url_queue.put(url)
+        movie_lists = []
+        with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
+            async with aiohttp.ClientSession(
+                connector=aiohttp.TCPConnector(limit=30, ttl_dns_cache=300)
+            ) as session:
+                while not url_queue.empty():
+                    tasks = []
+                    # Process up to 30 URLs concurrently
+                    for _ in range(min(30, url_queue.qsize())):
+                        url = await url_queue.get()
+                        tasks.append(asyncio.create_task(
+                            self._fetch_page(session, url, executor, url_queue)
+                        ))
+                    results = await asyncio.gather(*tasks)
+                    movie_lists.extend(results)
+        return movie_lists
 
     def scrape(self, num_movies: int, usernames: List[str], exclude_ids: List[str] = []) -> List[Movie]:
-        queue = deque(self._get_url_from_usernames(usernames))
-        movie_lists = []
-        while queue:
-            response = requests.get(queue.popleft())
-            movie_lists.append(self._parse(response.content, queue))
-        movie_lists = self._combine_dictionaries(movie_lists)
-        return self._pick_movies(movie_lists, exclude_ids, num_movies)
+        movie_lists = asyncio.run(self._scrape_async(usernames))
+        return self._pick_movies(self._combine_dictionaries(movie_lists), exclude_ids, num_movies)
     
-    def _parse(self, response_data: bytes, queue: Deque[str]) -> Dict[str, Movie]:
-        soup = BeautifulSoup(response_data, "html.parser")
-        next_button = soup.find("a", class_="next")
-        if next_button:
-            queue.append(f"{self.site_url}{next_button['href']}")
+    @staticmethod
+    def _parse(response_data: bytes) -> Dict[str, Movie]:
+        soup = BeautifulSoup(response_data, "lxml")
         movie_elements = soup.find("ul", class_="poster-list")
         movie_elem_list = movie_elements.find_all("li")
         movies = {}
