@@ -26,8 +26,8 @@ def main():
             print(f"Movie {movie_num + 1}--------------------------------")
             print(f"Title: {movie.title}")
             print(f"Movie ID: {movie.movie_id}")
-            print(f"Letterboxd URL: {scraper.site_url}{movie.letterboxd_path}")
-            print(f"Image URL: {scraper.film_url_start}{movie.letterboxd_path}{scraper.film_url_end}")
+            print(f"Letterboxd URL: {LetterboxdScraper.site_url}{movie.letterboxd_path}")
+            print(f"Image URL: {LetterboxdScraper.film_url_start}{movie.letterboxd_path}{LetterboxdScraper.film_url_end}")
     else:
         print("No movies found matching criteria")
 
