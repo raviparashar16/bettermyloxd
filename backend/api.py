@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, conlist, conint
 from typing import List, Optional
 from scrape import LetterboxdScraper
@@ -11,7 +12,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Simple rate limiting
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, need to replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 RATE_LIMIT_WINDOW = 60  # 1 minute
 RATE_LIMIT_REQUESTS = 20  # 20 requests per minute
 request_history = defaultdict(list)
