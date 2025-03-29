@@ -1,11 +1,13 @@
 from bs4 import BeautifulSoup
-from typing import List, Dict, Union
+from typing import List, Dict, Tuple, Union
 import random
 import asyncio
 import aiohttp
 from cython_utils import combine_dictionaries
 from movie_cy import Movie
 from concurrent.futures import ProcessPoolExecutor
+import httpx
+import base64
 
 
 class LetterboxdScraper:
@@ -80,10 +82,44 @@ class LetterboxdScraper:
                     results = await asyncio.gather(*tasks)
                     movie_lists.extend(results)
         return movie_lists
+    
+    async def _fetch_poster(self, movie: Movie) -> Tuple[Movie, Union[str, None]]:
+        async with httpx.AsyncClient() as client:
+            image_data = None
+            try:
+                # First request to get the HTML containing the actual image URL
+                response = await client.get(f"{LetterboxdScraper.film_url_start}{movie.letterboxd_path}{LetterboxdScraper.film_url_end}")
+                if response.status_code == 200:
+                    # Parse the HTML to get the actual image URL
+                    soup = BeautifulSoup(response.content, "lxml")
+                    img = soup.find("img", class_="image")
+                    if img and img.get("src"):
+                        # Fetch the actual image
+                        img_response = await client.get(img["src"])
+                        if img_response.status_code == 200:
+                            image_base64 = base64.b64encode(img_response.content).decode('utf-8')
+                            image_data = f"data:image/jpeg;base64,{image_base64}"
+            except Exception as e:
+                print(f"Error fetching poster: {e}")
+                pass
+            return movie, image_data
 
-    def scrape(self, num_movies: int, usernames: List[str], exclude_ids: List[str] = []) -> List[Movie]:
+    def scrape_sync(self, num_movies: int, usernames: List[str], exclude_ids: List[str] = []) -> List[Movie]:
         movie_lists = asyncio.run(self._scrape_async(usernames))
         return self._pick_movies(self._combine_dictionaries(movie_lists), exclude_ids, num_movies)
+    
+    async def scrape(self, num_movies: int, usernames: List[str], exclude_ids: List[str] = []) -> List[Dict]:
+        movie_lists = await self._scrape_async(usernames)
+        movie_list = self._pick_movies(self._combine_dictionaries(movie_lists), exclude_ids, num_movies)
+        poster_urls = await asyncio.gather(*[self._fetch_poster(movie) for movie in movie_list])
+        return [
+            {
+                "title": tup[0].title,
+                "id": tup[0].movie_id,
+                "url": f"{LetterboxdScraper.site_url}{tup[0].letterboxd_path}",
+                "image_data": tup[1]
+            } for tup in poster_urls
+        ]
     
     @staticmethod
     def _parse(response_data: bytes) -> Dict[str, Movie]:

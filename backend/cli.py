@@ -19,7 +19,7 @@ def main():
         parser.error("Maximum 5 excluded movies allowed")
 
     scraper = LetterboxdScraper()
-    movie_list = scraper.scrape(args.num_movies, args.usernames, args.exclude)
+    movie_list = scraper.scrape_sync(args.num_movies, args.usernames, args.exclude)
 
     if movie_list:
         for movie_num, movie in enumerate(movie_list):

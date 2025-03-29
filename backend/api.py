@@ -35,8 +35,8 @@ def check_rate_limit(request: Request) -> bool:
     return True
 
 class MovieRequest(BaseModel):
-    usernames: conlist(str, min_items=1, max_items=5)
-    exclude_ids: Optional[conlist(str, max_items=5)] = []
+    usernames: conlist(str, min_length=1, max_length=5)
+    exclude_ids: Optional[conlist(str, max_length=5)] = []
     num_movies: conint(ge=1, le=5) = 1
 
     class Config:
@@ -54,15 +54,8 @@ async def get_movie_recommendations(request: Request, movie_request: MovieReques
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Please try again later.")
     try:
         scraper = LetterboxdScraper()
-        movie_list = scraper.scrape(movie_request.num_movies, movie_request.usernames, movie_request.exclude_ids)
-        return [
-            {
-                "title": movie.title,
-                "id": movie.movie_id,
-                "url": f"{LetterboxdScraper.site_url}{movie.letterboxd_path}",
-                "image_url": f"{LetterboxdScraper.film_url_start}{movie.letterboxd_path}{LetterboxdScraper.film_url_end}"
-            } for movie in movie_list
-        ]
+        movie_list = await scraper.scrape(movie_request.num_movies, movie_request.usernames, movie_request.exclude_ids)
+        return movie_list
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
