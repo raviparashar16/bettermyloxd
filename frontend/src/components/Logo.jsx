@@ -8,8 +8,8 @@ const LogoContainer = styled.div`
   align-items: center;
   height: 100%;
   img {
-    width: 200px;
-    height: 135px;
+    width: 260px;
+    height: 190px;
   }
 `
 

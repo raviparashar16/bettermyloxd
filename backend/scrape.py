@@ -87,14 +87,11 @@ class LetterboxdScraper:
         async with httpx.AsyncClient() as client:
             image_data = None
             try:
-                # First request to get the HTML containing the actual image URL
                 response = await client.get(f"{LetterboxdScraper.film_url_start}{movie.letterboxd_path}{LetterboxdScraper.film_url_end}")
                 if response.status_code == 200:
-                    # Parse the HTML to get the actual image URL
                     soup = BeautifulSoup(response.content, "lxml")
                     img = soup.find("img", class_="image")
                     if img and img.get("src"):
-                        # Fetch the actual image
                         img_response = await client.get(img["src"])
                         if img_response.status_code == 200:
                             image_base64 = base64.b64encode(img_response.content).decode('utf-8')
