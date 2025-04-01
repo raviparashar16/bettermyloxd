@@ -8,7 +8,7 @@ from movie_cy import Movie
 from concurrent.futures import ProcessPoolExecutor
 import httpx
 import base64
-
+from collections import defaultdict
 
 class LetterboxdScraper:
     site_url = "https://letterboxd.com"
@@ -50,37 +50,51 @@ class LetterboxdScraper:
     def _get_url_from_usernames(usernames: List[str]) -> List[str]:
         return [f"{LetterboxdScraper.site_url}/{username}/watchlist/" for username in usernames]
     
-    async def _fetch_page(self, session: aiohttp.ClientSession, url: str, executor: ProcessPoolExecutor, url_queue: asyncio.Queue) -> Dict[str, Movie]:
+    async def _fetch_page(
+        self,
+        session: aiohttp.ClientSession,
+        ind: int,
+        url: str,
+        executor: ProcessPoolExecutor,
+        url_queue: asyncio.Queue
+        ) -> Tuple[int, Dict[str, Movie]]:
         async with session.get(url) as response:
             content = await response.read()
             soup = BeautifulSoup(content, "lxml")
             next_button = soup.find("a", class_="next")
             if next_button:
                 next_url = f"{LetterboxdScraper.site_url}{next_button['href']}"
-                await url_queue.put(next_url)
+                await url_queue.put((ind, next_url))
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(executor, self._parse, content)
-            return result
+            return ind, result
 
-    async def _scrape_async(self, usernames: List[str]) -> List[Dict[str, Movie]]:
+    async def _scrape_async(self, usernames: List[str]) -> Dict[int, List[Dict[str, Movie]]]:
         url_queue = asyncio.Queue()
-        for url in self._get_url_from_usernames(usernames):
-            await url_queue.put(url)
-        movie_lists = []
+        for ind, url in enumerate(self._get_url_from_usernames(usernames)):
+            await url_queue.put((ind, url))
+        movie_lists = defaultdict(list)
+        num_at_limit = [0]*len(usernames)
         with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
             async with aiohttp.ClientSession(
                 connector=aiohttp.TCPConnector(limit=30, ttl_dns_cache=300)
             ) as session:
-                while not url_queue.empty():
+                while not (url_queue.empty() or sum(num_at_limit) == len(usernames)):
                     tasks = []
-                    # Process up to 30 URLs concurrently
+                    # process up to 30 URLs concurrently
                     for _ in range(min(30, url_queue.qsize())):
-                        url = await url_queue.get()
-                        tasks.append(asyncio.create_task(
-                            self._fetch_page(session, url, executor, url_queue)
-                        ))
-                    results = await asyncio.gather(*tasks)
-                    movie_lists.extend(results)
+                        ind, url = await url_queue.get()
+                        # limit the number of movies we parse per user
+                        if len(movie_lists[ind]) < 10_000:
+                            tasks.append(asyncio.create_task(
+                                self._fetch_page(session, ind, url, executor, url_queue)
+                            ))
+                        else:
+                            num_at_limit[ind] += 1 if num_at_limit[ind] == 0 else 0
+                    if tasks:
+                        results = await asyncio.gather(*tasks)
+                        for ind, result in results:
+                            movie_lists[ind].append(result)
         return movie_lists
     
     async def _fetch_poster(self, movie: Movie) -> Tuple[Movie, Union[str, None]]:
