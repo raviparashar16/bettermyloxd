@@ -69,32 +69,36 @@ class LetterboxdScraper:
             result = await loop.run_in_executor(executor, self._parse, content)
             return ind, result
 
-    async def _scrape_async(self, usernames: List[str]) -> Dict[int, List[Dict[str, Movie]]]:
+    async def _scrape_async(self, usernames: List[str]) -> List[Dict[str, Movie]]:
+        usernames = list(set(usernames))
         url_queue = asyncio.Queue()
         for ind, url in enumerate(self._get_url_from_usernames(usernames)):
             await url_queue.put((ind, url))
-        movie_lists = defaultdict(list)
-        num_at_limit = [0]*len(usernames)
+        movie_lists = []
+        movies_per_user = [0]*len(usernames)
+        is_at_limit = [False]*len(usernames)
         with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
             async with aiohttp.ClientSession(
                 connector=aiohttp.TCPConnector(limit=30, ttl_dns_cache=300)
             ) as session:
-                while not (url_queue.empty() or sum(num_at_limit) == len(usernames)):
+                while not (url_queue.empty() or sum(is_at_limit) == len(usernames)):
                     tasks = []
                     # process up to 30 URLs concurrently
                     for _ in range(min(30, url_queue.qsize())):
                         ind, url = await url_queue.get()
-                        # limit the number of movies we parse per user
-                        if len(movie_lists[ind]) < 10_000:
+                        if not is_at_limit[ind]:
                             tasks.append(asyncio.create_task(
                                 self._fetch_page(session, ind, url, executor, url_queue)
                             ))
-                        else:
-                            num_at_limit[ind] += 1 if num_at_limit[ind] == 0 else 0
                     if tasks:
                         results = await asyncio.gather(*tasks)
                         for ind, result in results:
-                            movie_lists[ind].append(result)
+                            if not is_at_limit[ind]:
+                                movie_lists.append(result)
+                                movies_per_user[ind] += len(result)
+                                # limit the number of movies we parse per user
+                                if movies_per_user[ind] >= 6000:
+                                    is_at_limit[ind] = True
         return movie_lists
     
     async def _fetch_poster(self, movie: Movie) -> Tuple[Movie, Union[str, None]]:
