@@ -5,6 +5,7 @@ from typing import List, Optional
 from scrape import LetterboxdScraper
 from collections import defaultdict
 import time
+import aiohttp
 
 app = FastAPI(
     title="Letterboxd Movie Recommender API",
@@ -51,12 +52,14 @@ class MovieRequest(BaseModel):
 @app.post("/api/movies")
 async def get_movie_recommendations(request: Request, movie_request: MovieRequest):
     if not check_rate_limit(request):
-        raise HTTPException(status_code=429, detail="Rate limit exceeded. Please try again later.")
+        raise HTTPException(status_code=429, detail="You've made too many requests. Please try again later.")
     try:
         scraper = LetterboxdScraper()
         movie_list = await scraper.scrape(movie_request.num_movies, movie_request.usernames, movie_request.exclude_ids)
         return movie_list
+    except aiohttp.ClientError as e:
+        raise HTTPException(status_code=400, detail=f"Failed to fetch watchlist page: {e}. Please check that the usernames are valid and try again.")
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")

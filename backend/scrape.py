@@ -8,7 +8,6 @@ from movie_cy import Movie
 from concurrent.futures import ProcessPoolExecutor
 import httpx
 import base64
-from collections import defaultdict
 
 class LetterboxdScraper:
     site_url = "https://letterboxd.com"
@@ -21,6 +20,8 @@ class LetterboxdScraper:
     
     def _combine_dictionaries(self, all_movie_lists: List[Dict[str, Movie]]) -> Dict[str, Movie]:
         combined_movies = combine_dictionaries(all_movie_lists)
+        if not combined_movies:
+            raise ValueError("No movies found in any of the watchlists!")
         return combined_movies
     
     def _remove_used_movies(self, movies: Dict[str, Movie], exclude_ids: List[str]) -> Dict[str, Movie]:
@@ -38,13 +39,15 @@ class LetterboxdScraper:
             return final_picks
         else:
             movies = self._remove_used_movies(movies, exclude_ids)
+            if not movies:
+                raise ValueError("No movies found in watchlists that are not already in the shortlist!")
             if len(movies) == num_movies:
                 return list(movies.values())
             picks = self._random_pick(list(movies.keys()), num_movies)
             return [movies[movie_id] for movie_id in picks]
     
     def _random_pick(self, movie_keys: List[str], num_movies: int) -> List[str]:
-        return [random.choice(movie_keys)] if num_movies == 1 else random.choices(movie_keys, k=num_movies)
+        return [random.sample(movie_keys, 1)[0]] if num_movies == 1 else random.sample(movie_keys, num_movies)
     
     @staticmethod
     def _get_url_from_usernames(usernames: List[str]) -> List[str]:
@@ -59,12 +62,17 @@ class LetterboxdScraper:
         url_queue: asyncio.Queue
         ) -> Tuple[int, Dict[str, Movie]]:
         async with session.get(url) as response:
+            if not response.ok:
+                raise aiohttp.ClientError(f"Failed to fetch watchlist page: {response.status} {response.reason}")
             content = await response.read()
-            soup = BeautifulSoup(content, "lxml")
-            next_button = soup.find("a", class_="next")
-            if next_button:
-                next_url = f"{LetterboxdScraper.site_url}{next_button['href']}"
-                await url_queue.put((ind, next_url))
+            try:
+                soup = BeautifulSoup(content, "lxml")
+                next_button = soup.find("a", class_="next")
+                if next_button:
+                    next_url = f"{LetterboxdScraper.site_url}{next_button['href']}"
+                    await url_queue.put((ind, next_url))
+            except Exception as e:
+                raise ValueError(f"Error parsing watchlist page: {e}")
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(executor, self._parse, content)
             return ind, result
@@ -116,7 +124,6 @@ class LetterboxdScraper:
                             image_data = f"data:image/jpeg;base64,{image_base64}"
             except Exception as e:
                 print(f"Error fetching poster: {e}")
-                pass
             return movie, image_data
 
     def scrape_sync(self, num_movies: int, usernames: List[str], exclude_ids: List[str] = []) -> List[Movie]:
@@ -138,19 +145,22 @@ class LetterboxdScraper:
     
     @staticmethod
     def _parse(response_data: bytes) -> Dict[str, Movie]:
-        soup = BeautifulSoup(response_data, "lxml")
-        movie_elements = soup.find("ul", class_="poster-list")
-        movie_elem_list = movie_elements.find_all("li")
-        movies = {}
-        for movie_elem in movie_elem_list:
-            poster_div = movie_elem.find("div", class_="film-poster")
-            if poster_div:
-                film_id = poster_div.get("data-film-id")
-                film_url = poster_div.get("data-target-link")
-                img = poster_div.find("img")
-                if img:
-                    title = img.get("alt")
-                    film_slug = poster_div.get("data-film-slug")
-                    if film_slug:
-                        movies[film_id] = Movie(film_id, film_url, title)
+        try:
+            soup = BeautifulSoup(response_data, "lxml")
+            movie_elements = soup.find("ul", class_="poster-list")
+            movie_elem_list = movie_elements.find_all("li")
+            movies = {}
+            for movie_elem in movie_elem_list:
+                poster_div = movie_elem.find("div", class_="film-poster")
+                if poster_div:
+                    film_id = poster_div.get("data-film-id")
+                    film_url = poster_div.get("data-target-link")
+                    img = poster_div.find("img")
+                    if img:
+                        title = img.get("alt")
+                        film_slug = poster_div.get("data-film-slug")
+                        if film_slug:
+                            movies[film_id] = Movie(film_id, film_url, title)
+        except Exception as e:
+            raise ValueError(f"Error parsing watchlist page: {e}")
         return movies

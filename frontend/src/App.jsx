@@ -202,6 +202,15 @@ const RemoveIcon = () => (
   </svg>
 )
 
+const EmptyPoster = () => (
+  <svg width="200" height="300" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" fill="none">
+    <rect width="200" height="300" rx="10" ry="10" fill="#d3d3d3" stroke="#888" stroke-width="2"/>
+    <line x1="20" y1="20" x2="180" y2="280" stroke="#888" stroke-width="2" stroke-dasharray="5,5"/>
+    <line x1="180" y1="20" x2="20" y2="280" stroke="#888" stroke-width="2" stroke-dasharray="5,5"/>
+    <text x="50%" y="50%" font-size="20" fill="#555" text-anchor="middle" alignment-baseline="middle">Img Not Found</text>
+  </svg>
+)
+
 const SavedMoviesPanel = styled.div`
   position: fixed;
   right: ${props => props.isExpanded ? '0' : '-320px'};
@@ -413,6 +422,46 @@ const LoadingContainer = styled.div`
   }
 `
 
+const ErrorContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  justify-content: center;
+  padding: 20px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  position: relative;
+  max-width: 600px;
+  width: 100%;
+  margin: 40px auto;
+  text-align: center;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 14px;
+    background: rgba(129, 3, 3, 0.2);
+    z-index: -1;
+    padding: 2px;
+  }
+
+  h2 {
+    color: rgba(219, 224, 255, 0.8);
+    font-size: 24px;
+    margin: 0;
+    font-weight: normal;
+  }
+
+  p {
+    color: rgba(219, 224, 255, 0.8);
+    font-size: 16px;
+    margin: 0;
+    line-height: 1.5;
+  }
+`
+
 const LoadingAnimation = () => {
   const gifs = [bearGif, jarvisGif, gamblingGif];
   const gifmessage = ['Loading... please bear with us', 'Jarvis, give me some movie recs', 'May the film Gods be with you']
@@ -445,18 +494,30 @@ function App() {
     localStorage.setItem('savedMovies', JSON.stringify(savedMovies))
   }, [savedMovies])
 
+  const handleUsernameChange = (e) => {
+    const input = e.target.value;
+    const usernameList = input.split(' ').filter(u => u);
+    
+    if (usernameList.length > 5) {
+      showNotification('Maximum 5 usernames allowed. Please try again.');
+    } else {
+      setError(null);
+      setUsernames(input);
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
     setMovies([])
     try {
-        const result = await getMovieRecommendations(usernames, numMovies)
-        setMovies(result || [])
-      } catch (err) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
+      const result = await getMovieRecommendations(usernames, numMovies, savedMovies.map(m => m.id))
+      setMovies(result || [])
+     } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -507,22 +568,22 @@ function App() {
           <Logo />
           <MainContent>
             <Instructions>
-              Enter up to 5 usernames belonging to public <a href="https://letterboxd.com" target="_blank" rel="noopener noreferrer">Letterboxd</a> profiles to get random films from their watchlists.
-              Add multiple usernames by separating them with a space.
+              We will fetch random films from <a href="https://letterboxd.com" target="_blank" rel="noopener noreferrer">Letterboxd</a> watchlists.
+              Enter up to 5 usernames separated with a space. These usernames should belong to profiles with public watchlists.
             </Instructions>
 
             <form onSubmit={handleSubmit}>
               <InputContainer>
                 <Input
                   type="text"
-                  value={usernames} 
-                  onChange={(e) => setUsernames(e.target.value)}
-                  placeholder="ex: username1 username2"
+                  value={usernames}
+                  onChange={handleUsernameChange}
+                  placeholder="ex: username1 username2 username3"
                   disabled={loading}
                 />
                 <SubmitButton 
                   type="submit" 
-                  disabled={loading}
+                  disabled={loading || !usernames.trim()}
                 >
                   {loading ? 'LOADING...' : 'GET'}
                 </SubmitButton>
@@ -540,8 +601,6 @@ function App() {
               </InputContainer>
             </form>
 
-            {error && <ErrorMessage>{error}</ErrorMessage>}
-
             <AdvancedOptions>
               Advanced Options
             </AdvancedOptions>
@@ -551,6 +610,11 @@ function App() {
         <ResultContainer>
           {loading ? (
             <LoadingAnimation />
+          ) : error ? (
+            <ErrorContainer>
+              <h2>Something went wrong!</h2>
+              <p>{error}</p>
+            </ErrorContainer>
           ) : (
             <>
               {movies.length > 0 && (
@@ -565,12 +629,12 @@ function App() {
                   {movie.image_data && (
                     <a 
                       href={movie.url} 
-                      target="_blank" 
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="poster-link"
                     >
                       <img 
-                        src={movie.image_data}
+                        src={movie.image_data ? movie.image_data : EmptyPoster()}
                         alt={`${movie.title} poster`}
                         className="poster"
                         onError={(e) => {
