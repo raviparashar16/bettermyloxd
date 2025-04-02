@@ -1,6 +1,6 @@
 const API_URL = 'http://localhost:8000/api';
 
-export async function getMovieRecommendations(usernames, numMovies = 1, excludeIds = []) {
+export async function getMovieRecommendations(usernames, numMovies = 1, excludeIds = [], useCache = true) {
   try {
     const response = await fetch(`${API_URL}/movies`, {
       method: 'POST',
@@ -10,7 +10,8 @@ export async function getMovieRecommendations(usernames, numMovies = 1, excludeI
       body: JSON.stringify({
         usernames: usernames.split(/[\s]+/).filter(u => u),
         exclude_ids: excludeIds,
-        num_movies: numMovies
+        num_movies: numMovies,
+        use_cache: useCache
       }),
     });
 

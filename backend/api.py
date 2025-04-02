@@ -49,6 +49,7 @@ class MovieRequest(BaseModel):
     usernames: conlist(str, min_length=1, max_length=5)
     exclude_ids: Optional[conlist(str, max_length=5)] = []
     num_movies: conint(ge=1, le=5) = 1
+    use_cache: bool = True
 
     class Config:
         schema_extra = {
@@ -65,8 +66,13 @@ async def get_movie_recommendations(request: Request, movie_request: MovieReques
         raise HTTPException(status_code=429, detail="You've made too many requests. Please try again later.")
     try:
         scraper = LetterboxdScraper()
-        movie_list = await scraper.scrape(movie_request.num_movies, movie_request.usernames, movie_request.exclude_ids)
-        return movie_list
+        movies = await scraper.scrape(
+            movie_request.num_movies,
+            movie_request.usernames,
+            movie_request.exclude_ids,
+            movie_request.use_cache
+        )
+        return movies
     except aiohttp.ClientError as e:
         raise HTTPException(status_code=400, detail=f"Failed to fetch watchlist page: {e}. Please check that the usernames are valid and try again.")
     except ValueError as e:

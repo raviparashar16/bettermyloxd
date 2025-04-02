@@ -178,6 +178,45 @@ const AdvancedOptions = styled.button`  background: none;
   }
 `
 
+const AdvancedContent = styled.div`
+  margin-top: 15px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  display: ${props => props.isExpanded ? 'block' : 'none'};
+  animation: ${props => props.isExpanded ? 'slideDown 0.3s ease' : 'none'};
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+`;
+
+const CheckboxContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #99aabb;
+  font-size: 14px;
+
+  input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+  }
+    
+  label {
+    cursor: pointer;
+    user-select: none;
+  }
+`;
+
 const ExpandIcon = () => (
   <svg width="34" height="50" viewBox="0 0 34 50" xmlns="http://www.w3.org/2000/svg" fill="none">
     <path d="M20 10 L10 25 L20 40" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
@@ -221,6 +260,18 @@ const SavedMoviesPanel = styled.div`
   flex-direction: column;
   gap: 20px;
   z-index: 100;
+
+  .empty-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: rgb(219, 224, 255);
+    font-size: 16px;
+    text-align: center;
+    opacity: 0.7;
+    padding: 0 20px;
+  }
 
   .toggle-button {
     position: absolute;
@@ -483,6 +534,8 @@ function App() {
   })
   const [isPanelExpanded, setIsPanelExpanded] = useState(false)
   const [notification, setNotification] = useState({ message: '', show: false })
+  const [isAdvancedExpanded, setIsAdvancedExpanded] = useState(false)
+  const [useCache, setUseCache] = useState(true)
 
   useEffect(() => {
     localStorage.setItem('savedMovies', JSON.stringify(savedMovies))
@@ -506,7 +559,7 @@ function App() {
     setError(null)
     setMovies([])
     try {
-      const result = await getMovieRecommendations(usernames, numMovies, savedMovies.map(m => m.id))
+      const result = await getMovieRecommendations(usernames, numMovies, savedMovies.map(m => m.id), useCache)
       setMovies(result || [])
      } catch (err) {
       setError(err.message)
@@ -595,9 +648,24 @@ function App() {
               </InputContainer>
             </form>
 
-            <AdvancedOptions>
+            <AdvancedOptions 
+              isExpanded={isAdvancedExpanded}
+              onClick={() => setIsAdvancedExpanded(!isAdvancedExpanded)}
+            >
               Advanced Options
             </AdvancedOptions>
+
+            <AdvancedContent isExpanded={isAdvancedExpanded}>
+              <CheckboxContainer>
+                <input
+                  type="checkbox"
+                  id="useCache"
+                  checked={useCache}
+                  onChange={(e) => setUseCache(e.target.checked)}
+                />
+                <label htmlFor="useCache">Use cached results</label>
+              </CheckboxContainer>
+            </AdvancedContent>
           </MainContent>
         </div>
 
@@ -674,32 +742,38 @@ function App() {
             )}
           </div>
           <div className="saved-movies-list">
-            {savedMovies.map(movie => (
-              <div key={movie.id} className="saved-movie">
-                <a 
-                  href={movie.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="movie-link"
-                >
-                  {movie.image_data && (
-                    <img 
-                      src={movie.image_data}
-                      alt={`${movie.title} poster`}
-                    />
-                  )}
-                  <span className="title">
-                    {movie.title.length > 40 ? `${movie.title.slice(0, 40)}...` : movie.title}
-                  </span>
-                </a>
-                <button 
-                  className="remove"
-                  onClick={() => removeSavedMovie(movie.id)}
-                >
-                  <RemoveIcon />
-                </button>
+            {savedMovies.length === 0 ? (
+              <div className="empty-message">
+                Drag movies you're interested in here
               </div>
-            ))}
+            ) : (
+              savedMovies.map(movie => (
+                <div key={movie.id} className="saved-movie">
+                  <a 
+                    href={movie.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="movie-link"
+                  >
+                    {movie.image_data && (
+                      <img 
+                        src={movie.image_data}
+                        alt={`${movie.title} poster`}
+                      />
+                    )}
+                    <span className="title">
+                      {movie.title.length > 40 ? `${movie.title.slice(0, 40)}...` : movie.title}
+                    </span>
+                  </a>
+                  <button 
+                    className="remove"
+                    onClick={() => removeSavedMovie(movie.id)}
+                  >
+                    <RemoveIcon />
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </SavedMoviesPanel>
 
