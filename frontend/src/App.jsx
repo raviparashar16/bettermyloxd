@@ -14,11 +14,6 @@ const GlobalStyle = createGlobalStyle`
   }
 `
 
-const ErrorMessage = styled.div`
-  color: #ff4444;
-  margin: 10px 0;
-`
-
 const MovieResult = styled.div`
   padding: 20px;
   background: rgba(255, 255, 255, 0.1);
