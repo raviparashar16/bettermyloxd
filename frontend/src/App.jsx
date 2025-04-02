@@ -396,13 +396,13 @@ const LoadingContainer = styled.div`
 
   @keyframes pulseBorder {
     0% {
-      opacity: 0.3;
+      opacity: 0.2;
     }
     50% {
-      opacity: 0.8;
+      opacity: 0.9;
     }
     100% {
-      opacity: 0.3;
+      opacity: 0.2;
     }
   }
 
@@ -425,7 +425,6 @@ const ErrorContainer = styled.div`
   justify-content: center;
   padding: 20px;
   border-radius: 12px;
-  backdrop-filter: blur(10px);
   position: relative;
   max-width: 600px;
   width: 100%;
