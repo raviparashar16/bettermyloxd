@@ -8,6 +8,8 @@ from movie_cy import Movie
 from concurrent.futures import ProcessPoolExecutor
 import httpx
 import base64
+import itertools
+from cache import get_cached_movies_async, cache_movies_async
 
 class LetterboxdScraper:
     site_url = "https://letterboxd.com"
@@ -76,13 +78,41 @@ class LetterboxdScraper:
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(executor, self._parse, content)
             return ind, result
+    
+    async def _handle_cache_search(self, usernames: List[str]) -> Tuple[List[Dict[str, Movie]], List[str]]:
+        parsed_results = []
+        cache_miss_usernames = []
+        
+        cache_tasks = [get_cached_movies_async(username) for username in usernames]
+        cache_results = await asyncio.gather(*cache_tasks)
+        
+        for username, cached_movies in zip(usernames, cache_results):
+            if cached_movies:
+                parsed_results.extend(cached_movies)
+            else:
+                cache_miss_usernames.append(username)
+                
+        return parsed_results, cache_miss_usernames
+    
+    async def _handle_cache_write(self, usernames: List[str], movie_lists: List[List[Dict[str, Movie]]]):
+        cache_tasks = [
+            cache_movies_async(username, movie_list) for username, movie_list in zip(usernames, movie_lists)
+        ]
+        await asyncio.gather(*cache_tasks)
 
-    async def _scrape_async(self, usernames: List[str]) -> List[Dict[str, Movie]]:
+    async def _scrape_async(self, usernames: List[str], use_cache: bool = True) -> List[Dict[str, Movie]]:
         usernames = list(set(usernames))
+        parsed_results = []
+        if use_cache:
+            parsed_results, cache_miss_usernames = await self._handle_cache_search(usernames)
+            if not cache_miss_usernames:
+                return parsed_results
+            usernames = cache_miss_usernames
+
         url_queue = asyncio.Queue()
         for ind, url in enumerate(self._get_url_from_usernames(usernames)):
             await url_queue.put((ind, url))
-        movie_lists = []
+        movie_lists = [[] for _ in usernames]
         movies_per_user = [0]*len(usernames)
         is_at_limit = [False]*len(usernames)
         with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
@@ -102,12 +132,15 @@ class LetterboxdScraper:
                         results = await asyncio.gather(*tasks)
                         for ind, result in results:
                             if not is_at_limit[ind]:
-                                movie_lists.append(result)
+                                movie_lists[ind].append(result)
                                 movies_per_user[ind] += len(result)
                                 # limit the number of movies we parse per user
                                 if movies_per_user[ind] >= 6000:
                                     is_at_limit[ind] = True
-        return movie_lists
+        asyncio.create_task(self._handle_cache_write(usernames, movie_lists))
+        
+        parsed_results.extend(list(itertools.chain.from_iterable(movie_lists)))
+        return parsed_results
     
     async def _fetch_poster(self, movie: Movie) -> Tuple[Movie, Union[str, None]]:
         async with httpx.AsyncClient() as client:
@@ -126,12 +159,12 @@ class LetterboxdScraper:
                 print(f"Error fetching poster: {e}")
             return movie, image_data
 
-    def scrape_sync(self, num_movies: int, usernames: List[str], exclude_ids: List[str] = []) -> List[Movie]:
-        movie_lists = asyncio.run(self._scrape_async(usernames))
+    def scrape_sync(self, num_movies: int, usernames: List[str], exclude_ids: List[str] = [], use_cache: bool = True) -> List[Movie]:
+        movie_lists = asyncio.run(self._scrape_async(usernames, use_cache))
         return self._pick_movies(self._combine_dictionaries(movie_lists), exclude_ids, num_movies)
     
-    async def scrape(self, num_movies: int, usernames: List[str], exclude_ids: List[str] = []) -> List[Dict]:
-        movie_lists = await self._scrape_async(usernames)
+    async def scrape(self, num_movies: int, usernames: List[str], exclude_ids: List[str] = [], use_cache: bool = True) -> List[Dict]:
+        movie_lists = await self._scrape_async(usernames, use_cache)
         movie_list = self._pick_movies(self._combine_dictionaries(movie_lists), exclude_ids, num_movies)
         poster_urls = await asyncio.gather(*[self._fetch_poster(movie) for movie in movie_list])
         return [

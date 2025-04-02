@@ -1,0 +1,8 @@
+fastapi==0.104.1
+uvicorn==0.24.0
+beautifulsoup4==4.12.2
+aiohttp==3.9.1
+httpx==0.25.2
+lxml==4.9.3
+cython==3.0.6
+redis==5.0.1 

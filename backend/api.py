@@ -3,14 +3,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, conlist, conint
 from typing import List, Optional
 from scrape import LetterboxdScraper
+from cache import close_redis_connection
 from collections import defaultdict
 import time
 import aiohttp
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # startup
+    yield
+    # shutdown
+    await close_redis_connection()
 
 app = FastAPI(
     title="Letterboxd Movie Recommender API",
     description="API for getting random movie recommendations from Letterboxd watchlists",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 app.add_middleware(
