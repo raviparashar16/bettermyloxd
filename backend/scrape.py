@@ -9,16 +9,21 @@ from concurrent.futures import ProcessPoolExecutor
 import httpx
 import base64
 import itertools
-from cache import get_cached_movies_async, cache_movies_async
+from cache import RedisCache
 
 class LetterboxdScraper:
     site_url = "https://letterboxd.com"
     film_url_start = f"{site_url}/ajax/poster"
     film_url_end = "std/125x187/"
     
-    def __init__(self, seed: Union[int, None] = None, max_workers: Union[int, None] = None):
+    def __init__(self,
+                 seed: Union[int, None] = None,
+                 max_workers: Union[int, None] = None,
+                 redis_cache: RedisCache = None,
+                ):
         self.seed = random.seed(seed) if seed is not None else None
         self.max_workers = max_workers
+        self.redis_cache = redis_cache
     
     def _combine_dictionaries(self, all_movie_lists: List[Dict[str, Movie]]) -> Dict[str, Movie]:
         combined_movies = combine_dictionaries(all_movie_lists)
@@ -83,7 +88,7 @@ class LetterboxdScraper:
         parsed_results = []
         cache_miss_usernames = []
         
-        cache_tasks = [get_cached_movies_async(username) for username in usernames]
+        cache_tasks = [self.redis_cache.get_cached_movies_async(username) for username in usernames]
         cache_results = await asyncio.gather(*cache_tasks)
         
         for username, cached_movies in zip(usernames, cache_results):
@@ -96,7 +101,7 @@ class LetterboxdScraper:
     
     async def _handle_cache_write(self, usernames: List[str], movie_lists: List[List[Dict[str, Movie]]]):
         cache_tasks = [
-            cache_movies_async(username, movie_list) for username, movie_list in zip(usernames, movie_lists)
+            self.redis_cache.cache_movies_async(username, movie_list) for username, movie_list in zip(usernames, movie_lists)
         ]
         await asyncio.gather(*cache_tasks)
 
