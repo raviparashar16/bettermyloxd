@@ -1,7 +1,14 @@
 import argparse
 from scrape import LetterboxdScraper
+from cache import RedisCache
+from config import (REDIS_HOST,
+                    REDIS_PORT,
+                    REDIS_DB,
+                    REDIS_CACHE_EXPIRE_SECONDS,
+                    REDIS_CACHE_MAX_KEYS)
+import asyncio
 
-def main():
+async def main():
     parser = argparse.ArgumentParser(description='Get random movie recommendation from Letterboxd watchlist(s)')
     parser.add_argument('-u', '--usernames', nargs='+', type=str, required=True, 
                        help='valid public Letterboxd profile usernames (min 1, max 5)', metavar='USERNAME')
@@ -18,18 +25,19 @@ def main():
     if len(args.exclude) > 5:
         parser.error("Maximum 5 excluded movies allowed")
 
-    scraper = LetterboxdScraper()
-    movie_list = scraper.scrape_sync(args.num_movies, args.usernames, args.exclude)
+    redis_cache = RedisCache(REDIS_HOST, REDIS_PORT, REDIS_DB, REDIS_CACHE_EXPIRE_SECONDS, REDIS_CACHE_MAX_KEYS)
+    scraper = LetterboxdScraper(redis_cache=redis_cache)
+    movie_list = await scraper.scrape(args.num_movies, args.usernames, args.exclude)
 
     if movie_list:
         for movie_num, movie in enumerate(movie_list):
             print(f"Movie {movie_num + 1}--------------------------------")
-            print(f"Title: {movie.title}")
-            print(f"Movie ID: {movie.movie_id}")
-            print(f"Letterboxd URL: {LetterboxdScraper.site_url}{movie.letterboxd_path}")
-            print(f"Image URL: {LetterboxdScraper.film_url_start}{movie.letterboxd_path}{LetterboxdScraper.film_url_end}")
+            print(f"Title: {movie['title']}")
+            print(f"Movie ID: {movie['id']}")
+            print(f"Letterboxd URL: {LetterboxdScraper.site_url}{movie['url']}")
     else:
         print("No movies found matching criteria")
+    await redis_cache.close_redis_connection()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

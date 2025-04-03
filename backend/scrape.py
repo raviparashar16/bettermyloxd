@@ -164,10 +164,6 @@ class LetterboxdScraper:
                 print(f"Error fetching poster: {e}")
             return movie, image_data
 
-    def scrape_sync(self, num_movies: int, usernames: List[str], exclude_ids: List[str] = [], use_cache: bool = True) -> List[Movie]:
-        movie_lists = asyncio.run(self._scrape_async(usernames, use_cache))
-        return self._pick_movies(self._combine_dictionaries(movie_lists), exclude_ids, num_movies)
-    
     async def scrape(self, num_movies: int, usernames: List[str], exclude_ids: List[str] = [], use_cache: bool = True) -> List[Dict]:
         movie_lists = await self._scrape_async(usernames, use_cache)
         movie_list = self._pick_movies(self._combine_dictionaries(movie_lists), exclude_ids, num_movies)
