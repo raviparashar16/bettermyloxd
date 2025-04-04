@@ -1,8 +1,8 @@
-const API_URL = 'http://localhost:8000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export async function getMovieRecommendations(usernames, numMovies = 1, excludeIds = [], useCache = true) {
   try {
-    const response = await fetch(`${API_URL}/movies`, {
+    const response = await fetch(`${API_URL}/api/movies`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -22,8 +22,8 @@ export async function getMovieRecommendations(usernames, numMovies = 1, excludeI
 
     return await response.json();
   } catch (error) {
-    if (error instanceof TypeError && error.message === 'Failed to fetch') {
-      throw new Error('Unable to connect to the backend server.');
+    if (error.message.includes('Failed to fetch')) {
+      throw new Error("Unable to connect to the server. Please check if the backend is running.");
     }
     throw error;
   }
