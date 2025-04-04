@@ -14,6 +14,7 @@ from cache import RedisCache
 from rate_limiter import RateLimiter
 from scrape import LetterboxdScraper
 from contextlib import asynccontextmanager
+import ssl
 
 # Initialize Redis cache and rate limiter
 redis_cache = RedisCache(host=REDIS_HOST,
@@ -140,3 +141,9 @@ async def health_check():
         "queue_size": request_queue.qsize(),
         "processing_tasks": len(processing_tasks)
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ssl_context.load_cert_chain('certificate.crt', 'private.key')
+    uvicorn.run(app, host="0.0.0.0", port=8000, ssl_keyfile="private.key", ssl_certfile="certificate.crt")
