@@ -9,7 +9,9 @@ from config import (REDIS_HOST,
                     RATE_LIMIT_WINDOW,
                     RATE_LIMIT_MAX_REQUESTS,
                     REDIS_CACHE_EXPIRE_SECONDS,
-                    REDIS_CACHE_MAX_KEYS)
+                    REDIS_CACHE_MAX_KEYS,
+                    SSL_KEYFILE,
+                    SSL_CERTFILE)
 from cache import RedisCache
 from rate_limiter import RateLimiter
 from scrape import LetterboxdScraper
@@ -168,5 +170,5 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    ssl_context.load_cert_chain('certificate.crt', 'private.key')
-    uvicorn.run(app, host="0.0.0.0", port=8000, ssl_keyfile="private.key", ssl_certfile="certificate.crt")
+    ssl_context.load_cert_chain(SSL_CERTFILE, SSL_KEYFILE)
+    uvicorn.run(app, host="0.0.0.0", port=8000, ssl_keyfile=SSL_KEYFILE, ssl_certfile=SSL_CERTFILE)

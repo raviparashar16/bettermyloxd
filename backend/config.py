@@ -24,3 +24,7 @@ RATE_LIMIT_MAX_REQUESTS = int(os.getenv('RATE_LIMIT_MAX_REQUESTS', 20))
 # Redis Cache Configuration
 REDIS_CACHE_EXPIRE_SECONDS = int(os.getenv('REDIS_CACHE_EXPIRE_SECONDS', 86400))
 REDIS_CACHE_MAX_KEYS = int(os.getenv('REDIS_CACHE_MAX_KEYS', 1000))
+
+# SSL Configuration
+SSL_KEYFILE = os.getenv('SSL_KEYFILE')
+SSL_CERTFILE = os.getenv('SSL_CERTFILE')
