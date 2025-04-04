@@ -15,6 +15,11 @@ from rate_limiter import RateLimiter
 from scrape import LetterboxdScraper
 from contextlib import asynccontextmanager
 import ssl
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Initialize Redis cache and rate limiter
 redis_cache = RedisCache(host=REDIS_HOST,
@@ -70,7 +75,16 @@ async def process_requests():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # start the request processor
+    # startup
+    logger.info("Starting up application...")
+    try:
+        await redis_cache.redis_client.ping()
+        logger.info("Successfully connected to Redis")
+    except Exception as e:
+        logger.error(f"Failed to connect to Redis: {e}")
+        raise
+    
+    # start background task
     processor_task = asyncio.create_task(process_requests())
     processing_tasks.add(processor_task)
     processor_task.add_done_callback(processing_tasks.discard)
@@ -80,6 +94,7 @@ async def lifespan(app: FastAPI):
         task.cancel()
     await asyncio.gather(*processing_tasks, return_exceptions=True)
     await redis_cache.close_redis_connection()
+    logger.info("Redis connection closed")
 
 app = FastAPI(
     title="Letterboxd Movie Recommender API",
@@ -98,8 +113,10 @@ app.add_middleware(
 
 @app.post("/api/movies")
 async def get_movie_recommendations(request: Request, movie_request: MovieRequest):
+    """Endpoint to get movie recommendations from Letterboxd watchlists"""
     client_ip = request.client.host
     rate_limit_key = f"rate_limit:{client_ip}"
+    logger.info(f"Received request for usernames: {movie_request.usernames}")
     if await rate_limiter.is_rate_limited(rate_limit_key):
         reset_time = await rate_limiter.get_reset_time(rate_limit_key)
         raise HTTPException(
@@ -120,8 +137,12 @@ async def get_movie_recommendations(request: Request, movie_request: MovieReques
             'use_cache': movie_request.use_cache,
             'event': event
         }
+        logger.info("Adding request to queue...")
         await request_queue.put(request_data)
+        logger.info(f"Current queue size: {request_queue.qsize()}")
+        logger.info("Waiting for queue processing...")
         await event.wait()
+        logger.info("Processing complete")
         if request_data['error']:
             raise HTTPException(status_code=500, detail=request_data['error'])
 
@@ -132,10 +153,12 @@ async def get_movie_recommendations(request: Request, movie_request: MovieReques
             "remaining_requests": remaining
         }
     except Exception as e:
+        logger.error(f"Error processing request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/health")
 async def health_check():
+    """Health check endpoint that returns the current queue size and processing status."""
     return {
         "status": "healthy",
         "queue_size": request_queue.qsize(),
