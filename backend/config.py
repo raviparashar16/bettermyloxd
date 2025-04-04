@@ -15,7 +15,7 @@ REDIS_DB = int(os.getenv('REDIS_DB', 0))
 
 # API Configuration
 API_HOST = os.getenv('API_HOST', '0.0.0.0')
-API_PORT = int(os.getenv('API_PORT', 8000)) 
+API_PORT = int(os.getenv('API_PORT', 8000))
 
 # Rate Limiter Configuration
 RATE_LIMIT_WINDOW = int(os.getenv('RATE_LIMIT_WINDOW', 60))

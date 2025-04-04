@@ -69,8 +69,6 @@ async def process_requests():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # startup
-    await redis_cache.connect()
     # start the request processor
     processor_task = asyncio.create_task(process_requests())
     processing_tasks.add(processor_task)

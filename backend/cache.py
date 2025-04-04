@@ -18,10 +18,6 @@ class RedisCache:
         self.expire_seconds = expire_seconds
         self.max_keys = max_keys
 
-    async def connect(self):
-        """Connect to the Redis server."""
-        await self.redis_client.connect()
-
     async def update_last_access(self, username: str):
         """Update the last access time for a username in the cache."""
         await self.redis_client.zadd(LAST_ACCESS_KEY, {username: time.time()})
