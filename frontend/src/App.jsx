@@ -560,8 +560,12 @@ function App() {
     setMovies([])
     try {
       const result = await getMovieRecommendations(usernames, numMovies, savedMovies.map(m => m.id), useCache)
-      setMovies(result || [])
-     } catch (err) {
+      if (result && result.movies) {
+        setMovies(result.movies)
+      } else {
+        setError('No movies found')
+      }
+    } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
