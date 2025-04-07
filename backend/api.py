@@ -52,7 +52,7 @@ class MovieRequest(BaseModel):
 
 async def process_requests():
     """Background task to process queued requests"""
-    scraper = LetterboxdScraper()
+    scraper = LetterboxdScraper(redis_cache=redis_cache)
     while True:
         try:
             request_data = await request_queue.get()
