@@ -28,3 +28,6 @@ REDIS_CACHE_MAX_KEYS = int(os.getenv('REDIS_CACHE_MAX_KEYS', 1000))
 # SSL Configuration
 SSL_KEYFILE = os.getenv('SSL_KEYFILE')
 SSL_CERTFILE = os.getenv('SSL_CERTFILE')
+
+# Scrape Configuration
+SCRAPE_PER_USER = int(os.getenv('SCRAPE_PER_USER', 6000))

@@ -11,7 +11,7 @@ import base64
 import itertools
 from cache import RedisCache
 import logging
-
+from config import SCRAPE_PER_USER
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -168,7 +168,7 @@ class LetterboxdScraper:
                                 movie_lists[ind].append(result)
                                 movies_per_user[ind] += len(result)
                                 # limit the number of movies we parse per user
-                                if movies_per_user[ind] >= 6000:
+                                if movies_per_user[ind] >= SCRAPE_PER_USER:
                                     is_at_limit[ind] = True
         # write to cache the results for the given usernames
         asyncio.create_task(self._handle_cache_write(usernames, movie_lists))
