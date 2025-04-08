@@ -3,9 +3,14 @@ import json
 from typing import List, Dict
 from movie_cy import Movie
 import time
+import logging
 
 # key for tracking last access times
 LAST_ACCESS_KEY = "cache:last_access"
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class RedisCache:
     def __init__(self, host: str, port: int, db: int, expire_seconds: int, max_keys: int):
@@ -66,6 +71,7 @@ class RedisCache:
             cache_key = self.get_cache_key(username)
             cached_data = await self.redis_client.get(cache_key)
             if cached_data:
+                logger.info(f"Cache hit for {username}")
                 await self.update_last_access(username)
                 data = json.loads(cached_data)
                 return [
@@ -75,9 +81,10 @@ class RedisCache:
                     }
                     for parsed_page_dict in data
                 ]
+            logger.info(f"Cache miss for {username}")
             return None
         except redis.RedisError as e:
-            print(f"Redis error in get_cached_movies_async: {e}")
+            logger.info(f"Redis error in get_cached_movies_async: {e}")
             return None
 
     async def cache_movies_async(self, username: str, user_movie_list: List[Dict[str, Movie]]):
@@ -102,4 +109,4 @@ class RedisCache:
                 await pipe.execute()
                 
         except redis.RedisError as e:
-            print(f"Redis error in cache_movies_async: {e}")
+            logger.info(f"Redis error in cache_movies_async: {e}")

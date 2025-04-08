@@ -10,6 +10,11 @@ import httpx
 import base64
 import itertools
 from cache import RedisCache
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class LetterboxdScraper:
     site_url = "https://letterboxd.com"
@@ -161,7 +166,7 @@ class LetterboxdScraper:
                             image_base64 = base64.b64encode(img_response.content).decode('utf-8')
                             image_data = f"data:image/jpeg;base64,{image_base64}"
             except Exception as e:
-                print(f"Error fetching poster: {e}")
+                logger.info(f"Error fetching poster for {movie.title}: {e}")
             return movie, image_data
 
     async def scrape(self, num_movies: int, usernames: List[str], exclude_ids: List[str] = [], use_cache: bool = True) -> List[Dict]:

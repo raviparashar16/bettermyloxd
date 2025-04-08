@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import styled, { createGlobalStyle } from 'styled-components'
 import Logo from './components/Logo'
 import { getMovieRecommendations } from './services/api'
@@ -24,6 +24,12 @@ const MovieResult = styled.div`
   gap: 12px;
   width: 165px;
   
+  @media (max-width: 768px) {
+    width: 140px;
+    padding: 15px;
+    gap: 10px;
+  }
+
   .poster-link {
     display: block;
     &:hover {
@@ -37,6 +43,11 @@ const MovieResult = styled.div`
     height: 187px;
     border-radius: 4px;
     object-fit: cover;
+
+    @media (max-width: 768px) {
+      width: 110px;
+      height: 165px;
+    }
   }
 
   .movie-info {
@@ -48,6 +59,10 @@ const MovieResult = styled.div`
     color: rgb(219, 224, 255);
     margin: 0;
     font-size: 14px;
+    
+    @media (max-width: 768px) {
+      font-size: 12px;
+    }
     
     a {
       color: inherit;
@@ -66,13 +81,26 @@ const Container = styled.div`
   align-items: center;
   color: #99aabb;
   padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+
+  @media (max-width: 768px) {
+    padding: 10px;
+  }
 `
 
 const MainContent = styled.div`
   text-align: center;
   max-width: 800px;
   width: 100%;
-  margin-top: 40px;
+  margin-top: 20px;
+  padding: 0 20px;
+  box-sizing: border-box;
+
+  @media (max-width: 768px) {
+    margin-top: 10px;
+    padding: 0 10px;
+  }
 `
 
 const ResultHeader = styled.h1`
@@ -91,6 +119,11 @@ const LoadingHeader = styled.h1`
   text-align: center;
   width: 100%;
   font-weight: normal;
+
+  @media (max-width: 768px) {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
 `
 
 const ResultContainer = styled.div`
@@ -100,8 +133,15 @@ const ResultContainer = styled.div`
   justify-content: center;
   max-width: 1200px;
   width: 100%;
-  margin: 40px auto;
+  margin: 20px auto;
   padding: 0 20px;
+  box-sizing: border-box;
+
+  @media (max-width: 768px) {
+    gap: 15px;
+    padding: 0 10px;
+    margin: 15px auto;
+  }
 `
 
 const Instructions = styled.p`
@@ -121,16 +161,29 @@ const InputContainer = styled.div`
   display: flex;
   gap: 16px;
   margin-bottom: 20px;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    gap: 10px;
+    margin-bottom: 15px;
+  }
 `
 
 const Input = styled.input`
   flex: 1;
+  min-width: 200px;
   padding: 12px 16px;
   border-radius: 4px;
   border: none;
   background-color:rgb(207, 222, 245);
   color: #1a1d21;
   font-size: 16px;
+
+  @media (max-width: 768px) {
+    min-width: 100%;
+    font-size: 14px;
+    padding: 10px 12px;
+  }
 
   &::placeholder {
     color: #999;
@@ -148,6 +201,13 @@ const SubmitButton = styled.button`
   transition: all 0.2s;
   position: relative;
   overflow: hidden;
+  white-space: nowrap;
+
+  @media (max-width: 768px) {
+    padding: 10px 20px;
+    font-size: 14px;
+    width: 100%;
+  }
 
   &:hover {
     background-color: ${props => props.disabled ? 'rgb(88, 109, 135, 0.7)' : '#678'};
@@ -162,6 +222,12 @@ const Select = styled.select`
   color: #1a1d21;
   font-size: 16px;
   cursor: pointer;
+
+  @media (max-width: 768px) {
+    padding: 10px 12px;
+    font-size: 14px;
+    width: 100%;
+  }
 `
 
 const AdvancedOptions = styled.button`  background: none;
@@ -245,6 +311,37 @@ const EmptyPoster = () => (
   </svg>
 )
 
+const MobileToggleButton = styled.button`
+  display: none;
+  position: fixed;
+  top: ${props => props.isExpanded ? `${props.panelHeight}px` : '0'};
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.5);
+  border: none;
+  color: rgb(219, 224, 255);
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 0 0 4px 4px;
+  z-index: 101;
+  width: 60px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: top 0.3s ease;
+
+  @media (min-width: 769px) {
+    display: none;
+  }
+
+  svg {
+    width: 24px;
+    height: 24px;
+    transform: rotate(-90deg);
+  }
+`
+
 const SavedMoviesPanel = styled.div`
   position: fixed;
   right: ${props => props.isExpanded ? '0' : '-320px'};
@@ -261,6 +358,17 @@ const SavedMoviesPanel = styled.div`
   gap: 20px;
   z-index: 100;
 
+  @media (max-width: 768px) {
+    width: 100%;
+    height: auto;
+    max-height: 50vh;
+    right: 0;
+    top: ${props => props.isExpanded ? '0' : '-50vh'};
+    transition: top 0.3s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 10px;
+  }
+
   .empty-message {
     display: flex;
     align-items: center;
@@ -271,6 +379,12 @@ const SavedMoviesPanel = styled.div`
     text-align: center;
     opacity: 0.7;
     padding: 0 20px;
+
+    @media (max-width: 768px) {
+      font-size: 14px;
+      padding: 0 15px;
+      min-height: 100px;
+    }
   }
 
   .toggle-button {
@@ -291,6 +405,11 @@ const SavedMoviesPanel = styled.div`
     justify-content: center;
     width: 44px;
     height: 50px;
+    z-index: 101;
+    
+    @media (max-width: 768px) {
+      display: none;
+    }
     
     &:hover {
       background: rgba(255, 255, 255, 0.2);
@@ -306,17 +425,21 @@ const SavedMoviesPanel = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 4px;
 
     h2 {
       color: rgb(219, 224, 255);
       font-size: 18px;
       font-weight: normal;
       margin: 0;
+
+      @media (max-width: 768px) {
+        font-size: 16px;
+      }
     }
 
     .clear-button {
-      background: rgba(129, 3, 3, 0.2);
+      background: rgba(129, 3, 3, 0.3);
       border: none;
       color: rgb(219, 224, 255);
       cursor: pointer;
@@ -325,6 +448,11 @@ const SavedMoviesPanel = styled.div`
       border-radius: 4px;
       opacity: 0.7;
       transition: all 0.2s;
+
+      @media (max-width: 768px) {
+        font-size: 12px;
+        padding: 3px 6px;
+      }
 
       &:hover {
         opacity: 1;
@@ -337,18 +465,26 @@ const SavedMoviesPanel = styled.div`
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 4px;
     overflow-y: auto;
+
+    @media (max-width: 768px) {
+      max-height: calc(50vh - 100px);
+    }
   }
 
   .saved-movie {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.1);
     padding: 10px;
     border-radius: 4px;
     position: relative;
+
+    @media (max-width: 768px) {
+      padding: 4px;
+    }
 
     .movie-link {
       display: flex;
@@ -368,12 +504,21 @@ const SavedMoviesPanel = styled.div`
       height: 60px;
       border-radius: 2px;
       object-fit: cover;
+
+      @media (max-width: 768px) {
+        width: 28px;
+        height: 42px;
+      }
     }
 
     .title {
       flex: 1;
       font-size: 14px;
       color: rgb(219, 224, 255);
+
+      @media (max-width: 768px) {
+        font-size: 14px;
+      }
     }
 
     .remove {
@@ -390,6 +535,11 @@ const SavedMoviesPanel = styled.div`
       width: 24px;
       height: 24px;
       
+      @media (max-width: 768px) {
+        width: 16px;
+        height: 16px;
+      }
+      
       &:hover {
         opacity: 1;
       }
@@ -397,6 +547,11 @@ const SavedMoviesPanel = styled.div`
       svg {
         width: 24px;
         height: 24px;
+
+        @media (max-width: 768px) {
+          width: 16px;
+          height: 16px;
+        }
       }
     }
   }
@@ -406,7 +561,7 @@ const Notification = styled.div`
   position: fixed;
   top: 20px;
   right: ${props => props.isPanelExpanded ? '340px' : '20px'};
-  background: rgba(129, 3, 3, 0.2);
+  background: rgba(129, 3, 3, 0.4);
   backdrop-filter: blur(10px);
   padding: 12px 20px;
   border-radius: 4px;
@@ -416,6 +571,16 @@ const Notification = styled.div`
   transform: translateY(${props => props.show ? '0' : '20px'});
   pointer-events: none;
   z-index: 1000;
+  max-width: 300px;
+  text-align: center;
+
+  @media (max-width: 768px) {
+    right: 20px;
+    left: 20px;
+    max-width: 60%;
+    padding: 10px 15px;
+    font-size: 14px;
+  }
 `
 
 const LoadingContainer = styled.div`
@@ -428,6 +593,14 @@ const LoadingContainer = styled.div`
   border-radius: 12px;
   backdrop-filter: blur(10px);
   position: relative;
+  max-width: 600px;
+  width: 100%;
+  margin: 0 auto;
+
+  @media (max-width: 768px) {
+    padding: 15px;
+    gap: 15px;
+  }
 
   &::before {
     content: '';
@@ -459,12 +632,22 @@ const LoadingContainer = styled.div`
 
   .loading-gif {
     width: 100%;
+    max-width: 400px;
     height: auto;
+    border-radius: 8px;
+
+    @media (max-width: 768px) {
+      max-width: 300px;
+    }
   }
 
   p {
     color: rgb(219, 224, 255);
     font-size: 18px;
+
+    @media (max-width: 768px) {
+      font-size: 16px;
+    }
   }
 `
 
@@ -536,10 +719,27 @@ function App() {
   const [notification, setNotification] = useState({ message: '', show: false })
   const [isAdvancedExpanded, setIsAdvancedExpanded] = useState(false)
   const [useCache, setUseCache] = useState(true)
+  const [panelHeight, setPanelHeight] = useState(0)
+  const panelRef = useRef(null)
 
   useEffect(() => {
     localStorage.setItem('savedMovies', JSON.stringify(savedMovies))
   }, [savedMovies])
+
+  useEffect(() => {
+    if (panelRef.current) {
+      const updateHeight = () => {
+        setPanelHeight(panelRef.current.offsetHeight)
+      }
+      
+      updateHeight()
+      
+      const resizeObserver = new ResizeObserver(updateHeight)
+      resizeObserver.observe(panelRef.current)
+      
+      return () => resizeObserver.disconnect()
+    }
+  }, [isPanelExpanded])
 
   const handleUsernameChange = (e) => {
     const input = e.target.value;
@@ -723,7 +923,16 @@ function App() {
           )}
         </ResultContainer>
 
+        <MobileToggleButton 
+          onClick={() => setIsPanelExpanded(!isPanelExpanded)}
+          isExpanded={isPanelExpanded}
+          panelHeight={panelHeight}
+        >
+          {isPanelExpanded ? <CollapseIcon /> : <ExpandIcon />}
+        </MobileToggleButton>
+
         <SavedMoviesPanel 
+          ref={panelRef}
           isExpanded={isPanelExpanded}
           onDragOver={handleDragOver}
           onDrop={handleDrop}

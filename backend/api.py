@@ -72,7 +72,7 @@ async def process_requests():
                 request_data['event'].set()
                 request_queue.task_done()
         except Exception as e:
-            print(f"Error in request processor: {e}")
+            logger.error(f"Error in request processor: {e}")
             await asyncio.sleep(1)
 
 @asynccontextmanager
