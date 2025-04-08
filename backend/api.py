@@ -85,10 +85,10 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to connect to Redis: {e}")
         raise
-    
     # start background task
     processor_task = asyncio.create_task(process_requests())
     processing_tasks.add(processor_task)
+    # remove task from processing_tasks when it's done
     processor_task.add_done_callback(processing_tasks.discard)
     yield
     # shutdown

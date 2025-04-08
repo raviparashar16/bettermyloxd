@@ -5,7 +5,7 @@ from movie_cy import Movie
 import time
 import logging
 
-# key for tracking last access times
+# Key for tracking last access times
 LAST_ACCESS_KEY = "cache:last_access"
 
 # Configure logging
@@ -66,12 +66,13 @@ class RedisCache:
         return f"movies:{username}"
 
     async def get_cached_movies_async(self, username: str) -> List[Dict[str, Movie]]:
-        """Async version of get_cached_movies using redis.asyncio."""
+        """Get cached movies for a username using redis.asyncio."""
         try:
             cache_key = self.get_cache_key(username)
             cached_data = await self.redis_client.get(cache_key)
             if cached_data:
                 logger.info(f"Cache hit for {username}")
+                # update last access time for the username after getting the cached data
                 await self.update_last_access(username)
                 data = json.loads(cached_data)
                 return [
@@ -88,8 +89,9 @@ class RedisCache:
             return None
 
     async def cache_movies_async(self, username: str, user_movie_list: List[Dict[str, Movie]]):
-        """Async version of cache_movies using redis.asyncio."""
+        """Cache movies for a username using redis.asyncio."""
         try:
+            # evict the oldest cached results if the cache is full
             await self.enforce_key_limit()
             cache_key = self.get_cache_key(username)
             serialized_data = [
@@ -100,13 +102,15 @@ class RedisCache:
                 for parsed_page_dict in user_movie_list
             ]
             async with self.redis_client.pipeline() as pipe:
+                # set the cache key and expire time
                 await pipe.setex(
                     cache_key,
                     self.expire_seconds,
                     json.dumps(serialized_data)
                 )
+                # update the last access time for the username
                 await pipe.zadd(LAST_ACCESS_KEY, {username: time.time()})
                 await pipe.execute()
-                
+                logger.info(f"Cached movies for {username}")
         except redis.RedisError as e:
             logger.info(f"Redis error in cache_movies_async: {e}")
