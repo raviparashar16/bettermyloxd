@@ -86,7 +86,8 @@ class LetterboxdScraper:
         """Fetch the watchlist page"""
         async with session.get(url) as response:
             if not response.ok:
-                raise aiohttp.ClientError(f"Failed to fetch watchlist page: {response.status} {response.reason}")
+                raise aiohttp.ClientError(f"Failed to get watchlist pages. Please ensure your input is correct "
+                                          f"(i.e. separated by spaces and valid usernames with public watchlists).")
             content = await response.read()
             try:
                 soup = BeautifulSoup(content, "lxml")

@@ -23,7 +23,7 @@ export async function getMovieRecommendations(usernames, numMovies = 1, excludeI
     return await response.json();
   } catch (error) {
     if (error.message.includes('Failed to fetch')) {
-      throw new Error("Unable to connect to the server. Please check if the backend is running.");
+      throw new Error("Unable to connect to the server. The backend may not be running.");
     }
     throw error;
   }

@@ -146,7 +146,8 @@ async def get_movie_recommendations(request: Request, movie_request: MovieReques
         await event.wait()
         logger.info("Processing complete")
         if request_data['error']:
-            raise HTTPException(status_code=500, detail=request_data['error'])
+            raise HTTPException(status_code=404 if 'Failed to get watchlist pages' in request_data['error'] else 500,
+                                detail=request_data['error'])
 
         remaining = await rate_limiter.get_remaining_requests(rate_limit_key)
         
