@@ -31,3 +31,5 @@ SSL_CERTFILE = os.getenv('SSL_CERTFILE')
 
 # Scrape Configuration
 SCRAPE_PER_USER = int(os.getenv('SCRAPE_PER_USER', 6000))
+MAX_MOVIES_PER_PAGE = int(os.getenv('MAX_MOVIES_PER_PAGE', 28))
+MAX_CONCURRENT_SCRAPES = int(os.getenv('MAX_CONCURRENT_SCRAPES', 30))

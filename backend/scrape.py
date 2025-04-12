@@ -11,10 +11,41 @@ import base64
 import itertools
 from cache import RedisCache
 import logging
-from config import SCRAPE_PER_USER
+import math
+from config import SCRAPE_PER_USER, MAX_MOVIES_PER_PAGE, MAX_CONCURRENT_SCRAPES
+from collections import deque
+from typing import NamedTuple
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class PageResult(NamedTuple):
+    ind: int
+    movies: Dict[str, Movie]
+    error: bool
+
+
+class URLQueue:
+    pages_per_user = math.ceil(SCRAPE_PER_USER / MAX_MOVIES_PER_PAGE)
+
+    def __init__(self, usernames: List[str]):
+        self.url_arr = [deque([(ind, i, f"{LetterboxdScraper.site_url}/{username}/watchlist/page/{i+1}")
+                 for i in range(self.pages_per_user)])
+                 for ind, username in enumerate(usernames)]
+        self.dequeue_per_user = MAX_CONCURRENT_SCRAPES // len(usernames)
+    
+    def dequeue(self) -> List[Tuple[int, int, str]]:
+        """Dequeue the URLs for the watchlist pages for each user"""
+        dequeued_urls = []
+        for ind in range(len(self.url_arr)):
+            dequeued_urls.extend([self.url_arr[ind].popleft()
+                                 for _ in range(min(self.dequeue_per_user, len(self.url_arr[ind])))])
+        return dequeued_urls
+
+    def clear(self, user_ind: int):
+        """Clear the URLs for the watchlist pages for a given user"""
+        self.url_arr[user_ind] = deque()
 
 class LetterboxdScraper:
     site_url = "https://letterboxd.com"
@@ -78,30 +109,26 @@ class LetterboxdScraper:
     async def _fetch_page(
         self,
         session: aiohttp.ClientSession,
-        ind: int,
-        url: str,
         executor: ProcessPoolExecutor,
-        url_queue: asyncio.Queue
-        ) -> Tuple[int, Dict[str, Movie]]:
+        user_ind: int,
+        page_ind: int,
+        url: str,
+        ) -> PageResult:
         """Fetch the watchlist page"""
         async with session.get(url) as response:
             if not response.ok:
-                raise aiohttp.ClientError(f"Failed to get watchlist pages. Please ensure your input is correct "
+                # if the first page is not found, raise an error
+                if page_ind == 0:
+                    raise aiohttp.ClientError(f"Failed to get watchlist pages. Please ensure your input is correct "
                                           f"(i.e. separated by spaces and valid usernames with public watchlists).")
+                else:
+                    # if the page is not the first watchlist page, return an empty dictionary and a True error flag
+                    return PageResult(user_ind, {}, True)
             content = await response.read()
-            try:
-                soup = BeautifulSoup(content, "lxml")
-                next_button = soup.find("a", class_="next")
-                if next_button:
-                    # if there is a next button, add the next page to the queue
-                    next_url = f"{LetterboxdScraper.site_url}{next_button['href']}"
-                    await url_queue.put((ind, next_url))
-            except Exception as e:
-                raise ValueError(f"Error parsing watchlist page: {e}")
             loop = asyncio.get_event_loop()
             # use process pool to parse the watchlist page
             result = await loop.run_in_executor(executor, self._parse, content)
-            return ind, result
+            return PageResult(user_ind, result, False)
     
     async def _handle_cache_search(self, usernames: List[str]) -> Tuple[List[Dict[str, Movie]], List[str]]:
         """Search the cache for stored results for given usernames"""
@@ -141,9 +168,7 @@ class LetterboxdScraper:
                 return parsed_results
             usernames = cache_miss_usernames
         # create a queue to store the URLs for the watchlist pages
-        url_queue = asyncio.Queue()
-        for ind, url in enumerate(self._get_url_from_usernames(usernames)):
-            await url_queue.put((ind, url))
+        url_queue = URLQueue(usernames)
         movie_lists = [[] for _ in usernames]
         movies_per_user = [0]*len(usernames)
         is_at_limit = [False]*len(usernames)
@@ -153,24 +178,26 @@ class LetterboxdScraper:
             ) as session:
                 # process the URLs in the queue until it is empty or all users have reached the limit of
                 # number of movies we can parse per user
-                while not (url_queue.empty() or sum(is_at_limit) == len(usernames)):
-                    tasks = []
-                    # process up to 30 URLs concurrently
-                    for _ in range(min(30, url_queue.qsize())):
-                        ind, url = await url_queue.get()
-                        if not is_at_limit[ind]:
-                            tasks.append(asyncio.create_task(
-                                self._fetch_page(session, ind, url, executor, url_queue)
-                            ))
+                while not sum(is_at_limit) == len(usernames):
+                    tasks = [asyncio.create_task(self._fetch_page(session, executor, user_ind, page_ind, url))
+                             for user_ind, page_ind, url in url_queue.dequeue()]
                     if tasks:
                         results = await asyncio.gather(*tasks)
-                        for ind, result in results:
-                            if not is_at_limit[ind]:
-                                movie_lists[ind].append(result)
-                                movies_per_user[ind] += len(result)
+                        for res_tuple in results:
+                            user_ind, result, error = res_tuple
+                            if not error:
+                                movie_lists[user_ind].append(result)
+                                movies_per_user[user_ind] += len(result)
                                 # limit the number of movies we parse per user
-                                if movies_per_user[ind] >= SCRAPE_PER_USER:
-                                    is_at_limit[ind] = True
+                                if movies_per_user[user_ind] >= SCRAPE_PER_USER:
+                                    is_at_limit[user_ind] = True
+                                    url_queue.clear(user_ind)
+                            else:
+                                # if the page is not found, we've hit the limit for that user
+                                is_at_limit[user_ind] = True
+                                url_queue.clear(user_ind)
+                    else:
+                        break
         # write to cache the results for the given usernames
         asyncio.create_task(self._handle_cache_write(usernames, movie_lists))
         # extend the cached results with the results from the watchlists
