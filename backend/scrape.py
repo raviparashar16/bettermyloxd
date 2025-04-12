@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from typing import List, Dict, Tuple, Union
+from typing import List, Dict, Tuple, NamedTuple, Union
 import random
 import asyncio
 import aiohttp
@@ -14,7 +14,6 @@ import logging
 import math
 from config import SCRAPE_PER_USER, MAX_MOVIES_PER_PAGE, MAX_CONCURRENT_SCRAPES
 from collections import deque
-from typing import NamedTuple
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
