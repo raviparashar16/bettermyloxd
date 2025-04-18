@@ -14,22 +14,11 @@ async def scrape_page(page, page_number: int) -> List[str]:
     try:
         print(f"Attempting to load page {page_number}...")
         
-        # # First try to navigate to the base URL to establish connection
-        # try:
-        #     await page.goto(
-        #         "https://letterboxd.com",
-        #         timeout=30000,
-        #         wait_until="domcontentloaded"
-        #     )
-        #     await asyncio.sleep(2)  # Wait a bit after initial connection
-        # except Exception as e:
-        #     print(f"Warning: Could not establish initial connection: {e}")
-        
-        # Now try to load the specific page
+        # Try to load the specific page
         response = await page.goto(
             f"https://letterboxd.com/films/by/name/page/{page_number}", 
             timeout=60000,
-            wait_until="domcontentloaded"  # Changed from networkidle to domcontentloaded
+            wait_until="domcontentloaded"
         )
         
         if not response:
@@ -40,7 +29,6 @@ async def scrape_page(page, page_number: int) -> List[str]:
             
         print(f"Page {page_number} loaded successfully, waiting for content...")
         
-        # Wait for the content with a longer timeout
         try:
             # First wait for the page to be interactive
             await page.wait_for_load_state("domcontentloaded")
@@ -56,8 +44,6 @@ async def scrape_page(page, page_number: int) -> List[str]:
             )
             
             if not page_links:
-                # If no links found, check the page content
-                content = await page.content()
                 raise Exception("No links found on page")
             
             print(f"Successfully extracted {len(page_links)} links from page {page_number}")
