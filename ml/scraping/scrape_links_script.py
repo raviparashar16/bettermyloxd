@@ -92,7 +92,7 @@ def append_to_s3(links: List[str], bucket_name: str, file_key: str) -> None:
 
 async def scrape_letterboxd_movie_links(start_page: int = 1):
     BUCKET_NAME = os.getenv("BUCKET_NAME")
-    FILE_KEY = os.getenv("FILE_KEY")
+    file_key = "movie_links.json"
     
     async with async_playwright() as p:
         # Configure browser with more options
@@ -132,7 +132,7 @@ async def scrape_letterboxd_movie_links(start_page: int = 1):
                     
                     if links:
                         # Upload to S3
-                        append_to_s3(links, BUCKET_NAME, FILE_KEY)
+                        append_to_s3(links, BUCKET_NAME, file_key)
                         consecutive_errors = 0  # Reset error count on success
                     else:
                         consecutive_errors += 1
