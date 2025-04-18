@@ -160,7 +160,7 @@ async def scrape_letterboxd_movie_links(start_page: int = 1):
                     if consecutive_errors >= max_consecutive_errors:
                         print(f"Stopping due to {max_consecutive_errors} consecutive errors")
                         break
-                    await asyncio.sleep(10)  # Longer delay after error
+                    await asyncio.sleep(10*3**consecutive_errors)  # Longer delay after error
                     
         finally:
             await page.close()
@@ -168,4 +168,4 @@ async def scrape_letterboxd_movie_links(start_page: int = 1):
             await browser.close()
 
 if __name__ == "__main__":
-    asyncio.run(scrape_letterboxd_movie_links(1302))
+    asyncio.run(scrape_letterboxd_movie_links())
