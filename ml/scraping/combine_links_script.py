@@ -17,8 +17,7 @@ def list_s3_files(s3_client, bucket_name: str, prefix: str = '') -> List[str]:
     for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix):
         if 'Contents' in page:
             for obj in page['Contents']:
-                if obj['Key'].endswith('.json'):
-                    files.append(obj['Key'])
+                files.append(obj['Key'])
     
     print(f"Found {len(files)} JSON files")
     return files
