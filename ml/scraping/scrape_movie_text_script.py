@@ -50,8 +50,17 @@ async def get_movie_texts(session: aiohttp.ClientSession, url: str, rate_limiter
                     
                     html = await response.text()
                     soup = BeautifulSoup(html, "html.parser")
-                    meta_desc = soup.find("meta", attrs={"name": "description"})
+                    backdrop = soup.find("div", id="backdrop")
+                    if backdrop and backdrop.has_attr("data-film-id"):
+                        movie_id = backdrop.get("data-film-id")
+                        if movie_id:
+                            texts.append(movie_id)
+                        else:
+                            return None
+                    else:
+                        return None
                     
+                    meta_desc = soup.find("meta", attrs={"name": "description"})
                     if meta_desc and "content" in meta_desc.attrs:
                         raw_desc = meta_desc["content"]
                         cleaned_desc = re.sub(r"[\u200e\u200f\u202a-\u202e]", "", raw_desc).strip()
@@ -76,55 +85,54 @@ async def get_movie_texts(session: aiohttp.ClientSession, url: str, rate_limiter
                 await asyncio.sleep(10 * num_consecutive_failures)
                 continue
     else:
-        print(f"Description not found for {url}")
         return None
-
+    print(f"Description found for {url}")
     page_number = 1
     reviews = []
-    max_review_pages = 9
-    while len(reviews) < 9 and page_number <= max_review_pages:
-        num_consecutive_failures = 0
+    max_review_pages = 5
+    num_consecutive_failures = 0
+    while page_number <= max_review_pages and num_consecutive_failures < 3:
         reviews_url = url + f'reviews/by/activity/page/{page_number}/'
-        
-        while num_consecutive_failures < 3:
-            async with rate_limiter:
-                try:
-                    async with session.get(reviews_url, headers=headers) as response:
-                        if response.status != 200:
-                            print(f"Failed to fetch reviews page: {response.status}")
-                            num_consecutive_failures += 1
-                            await asyncio.sleep(10 * num_consecutive_failures)
-                            continue
-                        
-                        html = await response.text()
-                        soup = BeautifulSoup(html, "html.parser")
-                        review_items = soup.select("section.viewings-list li")
-                        
-                        for li in review_items:
-                            review_text_div = li.select_one("div.body-text")
-                            if review_text_div:
-                                review_text = review_text_div.get_text(strip=True, separator=" ")
-                                if review_text:
-                                    try:
-                                        if detect(review_text) == 'en':
-                                            reviews.append(review_text)
-                                    except LangDetectException:
+        async with rate_limiter:
+            try:
+                async with session.get(reviews_url, headers=headers) as response:
+                    if response.status != 200:
+                        print(f"Failed to fetch reviews page: {response.status}")
+                        num_consecutive_failures += 1
+                        await asyncio.sleep(10 * num_consecutive_failures)
+                        continue
+                    
+                    html = await response.text()
+                    soup = BeautifulSoup(html, "html.parser")
+                    review_items = soup.select("section.viewings-list li")
+                    if not review_items:
+                        break
+                    for li in review_items:
+                        review_text_div = li.select_one("div.body-text")
+                        if review_text_div:
+                            review_text = review_text_div.get_text(strip=True, separator=" ")
+                            if review_text:
+                                try:
+                                    if detect(review_text) == 'en':
                                         reviews.append(review_text)
-                            if len(reviews) >= 9:
-                                break
-                                
-                except Exception as e:
-                    print(f"Error fetching reviews: {e}")
-                    num_consecutive_failures += 1
-                    await asyncio.sleep(10 * num_consecutive_failures)
-                    continue
-        else:
-            print(f"Failed to fetch reviews for {url}")
-            return None
-            
-        page_number += 1
+                                except LangDetectException:
+                                    reviews.append(review_text)
+                        if len(reviews) >= 9:
+                            break
+                if len(reviews) < 9:
+                    page_number += 1
+                    num_consecutive_failures = 0
+                else:
+                    break
+                            
+            except Exception as e:
+                print(f"Error fetching reviews: {e}")
+                num_consecutive_failures += 1
+                await asyncio.sleep(10 * num_consecutive_failures)
+                continue
     if len(reviews) < 9:
         return None
+    print(f"Reviews found for {url}")
     texts.extend(reviews)
     return texts
 
@@ -139,10 +147,9 @@ async def process_batch(session: aiohttp.ClientSession, urls: List[str], rate_li
         try:
             texts = await task
             if texts:
-                movie_texts[url] = texts
+                movie_texts[texts[0]] = texts[1:]
         except Exception as e:
             print(f"Error processing {url}: {e}")
-    
     return movie_texts
 
 async def append_to_s3_batch(s3_client, movie_texts: Dict[str, List[str]], bucket_name: str, batch_number: int, worker_id: int) -> None:
@@ -207,6 +214,6 @@ async def main(worker_id: int, total_workers: int):
             await asyncio.sleep(2)
 
 if __name__ == "__main__":
-    worker_id = os.getenv("WORKER_ID")
-    total_workers = os.getenv("TOTAL_WORKERS")
+    worker_id = int(os.getenv("WORKER_ID"))
+    total_workers = int(os.getenv("TOTAL_WORKERS"))
     asyncio.run(main(worker_id, total_workers))
