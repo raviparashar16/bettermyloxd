@@ -222,10 +222,10 @@ class LetterboxdScraper:
                 logger.info(f"Error fetching poster for {movie.title}: {e}")
             return movie, image_data
 
-    async def scrape(self, num_movies: int, usernames: List[str], exclude_ids: List[str] = [], use_cache: bool = True) -> List[Dict]:
+    async def scrape(self, num_movies: int, usernames: List[str], exclude_ids: List[str] = None, use_cache: bool = True) -> List[Dict]:
         """Scrape the watchlists for the given usernames and return movie suggestions"""
         movie_lists = await self._scrape_async(usernames, use_cache)
-        movie_list = self._pick_movies(self._combine_dictionaries(movie_lists), exclude_ids, num_movies)
+        movie_list = self._pick_movies(self._combine_dictionaries(movie_lists), exclude_ids or [], num_movies)
         poster_urls = await asyncio.gather(*[self._fetch_poster(movie) for movie in movie_list])
         return [
             {

@@ -37,7 +37,7 @@ processing_tasks = set()
 
 class MovieRequest(BaseModel):
     usernames: conlist(str, min_length=1, max_length=5)
-    exclude_ids: Optional[conlist(str, max_length=5)] = []
+    exclude_ids: Optional[conlist(str, max_length=5)] = None
     num_movies: conint(ge=1, le=5) = 1
     use_cache: bool = True
 
